@@ -938,32 +938,7 @@ function validateOperatingAgreement(content, contentLower, pages, keyValuePairs,
 function validateCertificateOfIncorporation(content, contentLower, pages, keyValuePairs, formFields) {
   const missingElements = [];
   const suggestedActions = [];
-  let detectedOrganizationName = null;
-  
-  // Extract organization name from the document structure
-  const nameSection = content.match(/1\.\s*Name\s*:(.*?)(?=2\.|$)/s);
-  if (nameSection && nameSection[1] && nameSection[1].trim().length > 0) {
-    detectedOrganizationName = nameSection[1].trim();
-  }
-  
-  // If not found by section, look for it after "above-named"
-  if (!detectedOrganizationName) {
-    const aboveNamedMatch = content.match(/above-named\s+([^was]+)was/i);
-    if (aboveNamedMatch && aboveNamedMatch[1] && aboveNamedMatch[1].trim().length > 0) {
-      detectedOrganizationName = aboveNamedMatch[1].trim();
-    }
-  }
-  
-  // Check for organization name match if provided
-  if (formFields.organizationName && detectedOrganizationName) {
-    const orgNameLower = formFields.organizationName.toLowerCase().trim();
-    const detectedOrgNameLower = detectedOrganizationName.toLowerCase().trim();
-    
-    if (!detectedOrgNameLower.includes(orgNameLower) && !orgNameLower.includes(detectedOrgNameLower)) {
-      missingElements.push("Organization name doesn't match the one on the certificate");
-      suggestedActions.push("Verify that the correct organization name was entered");
-    }
-  }
+  const detectedOrganizationName = null;
   
   // Check for required elements in the document
   // 1. Check for Certificate title
@@ -1010,35 +985,7 @@ function validateCertificateOfIncorporation(content, contentLower, pages, keyVal
     suggestedActions.push("Verify the certificate lists the Incorporators");
   }
   
-  // 6. Check for filing statement
-  const hasFilingStatement = contentLower.includes("duly filed") || 
-                            contentLower.includes("filed in accordance");
-  
-  if (!hasFilingStatement) {
-    missingElements.push("Filing statement");
-    suggestedActions.push("Verify the certificate confirms it was duly filed");
-  }
-  
-  // 7. Check for identification number
-  const hasIdentificationNumber = contentLower.includes("identification number") || 
-                                contentLower.includes("id number");
-  
-  if (!hasIdentificationNumber) {
-    missingElements.push("Identification number");
-    suggestedActions.push("Verify the certificate includes an identification number");
-  }
-  
-  // 8. Check for signature
-  const hasSignature = contentLower.includes("signature") || 
-                      contentLower.includes("signed") ||
-                      contentLower.includes("state treasurer");
-  
-  if (!hasSignature) {
-    missingElements.push("Signature");
-    suggestedActions.push("Verify the certificate has been signed");
-  }
-  
-  // 9. Check for state seal
+  // 6. Check for state seal
   const hasStateSeal = contentLower.includes("official seal") || 
                       contentLower.includes("seal at trenton") ||
                       contentLower.includes("testimony whereof") ||
@@ -1047,31 +994,6 @@ function validateCertificateOfIncorporation(content, contentLower, pages, keyVal
   if (!hasStateSeal) {
     missingElements.push("State seal");
     suggestedActions.push("Verify the certificate has the State seal affixed");
-  }
-  
-  // 10. Check for verification information
-  const hasVerificationInfo = contentLower.includes("verify this certificate") || 
-                              contentLower.includes("certification#");
-  
-  if (!hasVerificationInfo) {
-    missingElements.push("Verification information");
-    suggestedActions.push("Verify the certificate includes verification information");
-  }
-  
-  // 11. Check for Business Purpose section
-  const hasBusinessPurpose = contentLower.includes("business purpose:");
-  
-  if (!hasBusinessPurpose) {
-    missingElements.push("Business Purpose section");
-    suggestedActions.push("Verify the certificate includes a Business Purpose section");
-  }
-  
-  // 12. Check for Stock information for profit corporations
-  const hasStockInfo = contentLower.includes("stock:");
-  
-  if (!hasStockInfo) {
-    missingElements.push("Stock information");
-    suggestedActions.push("Verify the certificate includes stock information");
   }
   
   return { 
@@ -1086,36 +1008,13 @@ function validateIRSDeterminationLetter(content, contentLower, pages, keyValuePa
   const missingElements = [];
   const suggestedActions = [];
   
-  // Check for Letter 1076 and Catalog Number 35161A
-  const hasLetter1076 = contentLower.includes("letter 1076");
-  const hasCatalog = contentLower.includes("catalog number 35161a") || 
-                     contentLower.includes("catalog no. 35161a");
+  // Check for letter number/catalog number
+  const hasLetterInfo = contentLower.includes("letter 5274") || 
+                        contentLower.includes("determination letter");
   
-  if (!hasLetter1076) {
-    missingElements.push("Letter 1076");
-    suggestedActions.push("Verify the document contains 'Letter 1076'");
-  }
-  
-  if (!hasCatalog) {
-    missingElements.push("Catalog Number 35161A");
-    suggestedActions.push("Verify the document contains 'Catalog Number 35161A'");
-  }
-  
-  // Check for DLN, FEIN, etc.
-  const hasDLN = /dln|document locator number/i.test(content);
-  const hasFEIN = /fein|employer identification number|ein/i.test(content);
-  const hasContactPerson = /contact person|id#/i.test(content);
-  
-  if (!hasDLN) {
-    missingElements.push("DLN (Document Locator Number)");
-  }
-  
-  if (!hasFEIN) {
-    missingElements.push("FEIN (Federal Employer Identification Number)");
-  }
-  
-  if (!hasContactPerson) {
-    missingElements.push("Contact person/ID#");
+  if (!hasLetterInfo) {
+    missingElements.push("Letter number (Letter 5274 or similar)");
+    suggestedActions.push("Verify the document shows a letter/form number at the bottom of pages");
   }
   
   // Check for IRS letterhead
@@ -1124,25 +1023,93 @@ function validateIRSDeterminationLetter(content, contentLower, pages, keyValuePa
   
   if (!hasIRSLetterhead) {
     missingElements.push("IRS letterhead");
-    suggestedActions.push("Verify the letter is on IRS letterhead");
+    suggestedActions.push("Verify the letter is on IRS letterhead showing 'Internal Revenue Service'");
   }
   
-  // Check for date stamp
-  const hasDateStamp = /date[d]?(\s*on)?:|dated|effective date/i.test(content) || 
-                      /\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}/.test(content);
+  // Check for DLN (Document Locator Number)
+  const hasDLN = contentLower.includes("dln:");
   
-  if (!hasDateStamp) {
-    missingElements.push("Date stamp");
-    suggestedActions.push("Verify the letter is date stamped");
+  if (!hasDLN) {
+    missingElements.push("DLN (Document Locator Number)");
+    suggestedActions.push("Verify the letter includes a DLN number");
+  }
+  
+  // Check for Employer Identification Number (EIN/FEIN)
+  const hasEIN = contentLower.includes("employer identification number") || 
+                contentLower.match(/ein\s*:/i);
+  
+  if (!hasEIN) {
+    missingElements.push("Employer Identification Number (EIN)");
+    suggestedActions.push("Verify the letter includes an Employer Identification Number");
+  }
+  
+  // Check for Contact Person information
+  const hasContactPerson = contentLower.includes("person to contact") || 
+                          contentLower.includes("contact telephone");
+  
+  if (!hasContactPerson) {
+    missingElements.push("Contact person information");
+    suggestedActions.push("Verify the letter includes contact person details");
+  }
+  
+  // Check for 'favorable determination' language
+  const hasFavorableDetermination = contentLower.includes("favorable determination") || 
+                                   contentLower.includes("we are issuing this favorable");
+  
+  if (!hasFavorableDetermination) {
+    missingElements.push("Favorable determination statement");
+    suggestedActions.push("Verify the letter explicitly states it is a favorable determination");
+  }
+  
+  // Check for Date and it being within 15 years (usual IRS determination validity)
+  let hasRecentDate = false;
+  const dateMatches = content.match(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+\d{4}\b/gi) || 
+                     content.match(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/g);
+  
+  if (dateMatches) {
+    const now = new Date();
+    const fifteenYearsAgo = new Date();
+    fifteenYearsAgo.setFullYear(now.getFullYear() - 15);
+    
+    for (const dateStr of dateMatches) {
+      const date = new Date(dateStr);
+      if (!isNaN(date) && date >= fifteenYearsAgo) {
+        hasRecentDate = true;
+        break;
+      }
+    }
+  }
+  
+  if (!hasRecentDate) {
+    missingElements.push("Recent date (within the past 15 years)");
+    suggestedActions.push("Verify the determination letter is still valid (typically valid for up to 15 years)");
   }
   
   // Check for Director's signature
-  const hasDirectorSignature = contentLower.includes("director of exempt organizations") || 
-                              contentLower.includes("director, exempt organizations");
+  const hasDirectorSignature = contentLower.includes("director") && 
+                              (contentLower.includes("sincerely") || 
+                               contentLower.includes("signature"));
   
   if (!hasDirectorSignature) {
-    missingElements.push("Signature of the Director of Exempt Organizations");
-    suggestedActions.push("Verify the letter contains the signature of the Director of Exempt Organizations");
+    missingElements.push("Director's signature");
+    suggestedActions.push("Verify the letter contains the signature of an IRS Director/official");
+  }
+  
+  // Check for amendments information (specific to this type of letter)
+  const hasAmendmentsInfo = contentLower.includes("amendments dated");
+  
+  if (!hasAmendmentsInfo) {
+    missingElements.push("Amendments information");
+    suggestedActions.push("Verify the letter references specific plan amendments");
+  }
+  
+  // Check for expiration information
+  const hasExpirationInfo = contentLower.includes("expires on") || 
+                           contentLower.match(/this\s+letter\s+expires/i);
+  
+  if (!hasExpirationInfo) {
+    missingElements.push("Expiration information");
+    suggestedActions.push("Verify the letter specifies an expiration date");
   }
   
   return { 
@@ -1161,24 +1128,63 @@ function validateBylaws(content, contentLower, pages, keyValuePairs) {
     missingElements.push("Required text: 'Bylaws' or 'By-laws'");
   }
   
-  // Check for basic sections typically found in bylaws
-  const sections = [
-    { name: "Article(s)", keyword: /article[s]?/i },
-    { name: "Board of Directors section", keyword: /board of directors|directors/i },
-    { name: "Officers section", keyword: /officers/i },
-    { name: "Meetings section", keyword: /meeting[s]?/i },
-    { name: "Amendments section", keyword: /amendment[s]?/i }
+  // Check for New Jersey-specific language
+  const hasNJReference = contentLower.includes("new jersey") ||
+                        contentLower.includes("new jersey business corporation act") ||
+                        contentLower.includes("department of the treasury");
+  
+  if (!hasNJReference) {
+    missingElements.push("New Jersey state references");
+    suggestedActions.push("Verify the bylaws reference New Jersey state law");
+  }
+  
+  // Check for key sections typically found in bylaws
+  const requiredSections = [
+    { name: "Board of Directors", regex: /board of directors|directors/i },
+    { name: "Meetings section", regex: /meeting[s]?|annual meeting/i },
+    { name: "Amendments section", regex: /amendment[s]?|amend/i },
+    { name: "Corporate formation", regex: /formation|organization|incorporate/i },
+    { name: "Shareholders", regex: /shareholder[s]?|stockholder[s]?/i },
+    { name: "Capital/Stock", regex: /capital|stock|shares/i },
+    { name: "Books and Records", regex: /books and records|corporate records/i }
   ];
   
-  for (const section of sections) {
-    if (!section.keyword.test(content)) {
+  for (const section of requiredSections) {
+    if (!section.regex.test(content)) {
       missingElements.push(`${section.name}`);
+      suggestedActions.push(`Verify bylaws contain a ${section.name.toLowerCase()} section`);
     }
   }
   
-  // If missing multiple sections, add a suggestion
-  if (missingElements.length > 2) {
-    suggestedActions.push("Verify document is a complete set of bylaws with all required sections");
+  // Check for specific corporate compliance elements
+  const complianceElements = [
+    { name: "Director duties", regex: /director.{1,30}(duties|responsibilities|liability)/i },
+    { name: "Voting procedures", regex: /vot(e|ing)/i },
+    { name: "Corporate seal", regex: /corporate seal/i }
+  ];
+  
+  for (const element of complianceElements) {
+    if (!element.regex.test(content)) {
+      missingElements.push(`${element.name}`);
+      suggestedActions.push(`Verify bylaws address ${element.name.toLowerCase()}`);
+    }
+  }
+  
+  // Check for page numbering
+  const hasPageNumbering = /page\s+\d+\s+of\s+\d+/i.test(content);
+  
+  if (!hasPageNumbering) {
+    missingElements.push("Page numbering");
+    suggestedActions.push("Verify bylaws include proper page numbering (e.g., 'Page X of Y')");
+  }
+  
+  // Check for statutory references
+  const hasStatutoryReferences = content.match(/\d+a:\d+-\d+/i) || // NJ format 14A:X-X
+                                content.match(/section\s+\d+a:/i);
+  
+  if (!hasStatutoryReferences) {
+    missingElements.push("New Jersey statutory references");
+    suggestedActions.push("Verify bylaws reference specific sections of the New Jersey Business Corporation Act");
   }
   
   return { 

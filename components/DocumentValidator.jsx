@@ -16,7 +16,7 @@ export default function EnhancedDocumentValidator() {
     fein: ''
   });
 
-  const documentTypes = [
+  const documentTypes =  [
     { value: 'tax-clearance-online', label: 'Tax Clearance Certificate (Online Generated)' },
     { value: 'tax-clearance-manual', label: 'Tax Clearance Certificate (Manually Generated)' },
     { value: 'cert-alternative-name', label: 'Certificate of Alternative Name' },
@@ -146,7 +146,6 @@ export default function EnhancedDocumentValidator() {
             </div>
           </>
         );
-      case 'cert-incorporation':
       case 'cert-formation':
       case 'cert-good-standing-long':
       case 'cert-good-standing-short':
@@ -158,7 +157,7 @@ export default function EnhancedDocumentValidator() {
               name="organizationName"
               value={formFields.organizationName}
               onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600"
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Enter organization name"
             />
           </div>
