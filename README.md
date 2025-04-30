@@ -34,3 +34,30 @@ You can check out [the Next.js GitHub repository](https://github.com/vercel/next
 The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
 
 Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+
+## Setting Up Supabase for Feedback Feature
+
+This application uses Supabase to store user feedback. Follow these steps to set it up:
+
+1. Create a Supabase account at [supabase.com](https://supabase.com/)
+2. Create a new project
+3. In your SQL editor, create a feedback table:
+
+```sql
+CREATE TABLE feedback (
+  id SERIAL PRIMARY KEY,
+  feedback TEXT NOT NULL,
+  document_type TEXT,
+  email TEXT,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+```
+
+4. Create a `.env.local` file in the root directory with the following variables:
+
+```
+NEXT_PUBLIC_SUPABASE_URL=your-supabase-project-url
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+```
+
+5. Replace the placeholder values with your actual Supabase project URL and anon key from your Supabase project settings.
