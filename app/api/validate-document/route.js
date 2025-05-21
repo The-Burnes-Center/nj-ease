@@ -209,7 +209,8 @@ function validateTaxClearanceOnline(content, contentLower, pages, keyValuePairs,
   }
   
   // Check for State of New Jersey
-  if (!contentLower.includes("state of new jersey")) {
+  if (!contentLower.includes("state of new jersey") && 
+      !contentLower.includes("new jersey")) {
     missingElements.push("Required text: 'State of New Jersey'");
   }
   
@@ -267,7 +268,8 @@ function validateTaxClearanceOnline(content, contentLower, pages, keyValuePairs,
     "environmental protection",
     "new jersey economic development authority",
     "economic development authority",
-    "njeda"
+    "njeda",
+    "new jersey board of public utilities",
   ];
   
   const hasAcceptableAgency = acceptableAgencies.some(agency => 
@@ -482,7 +484,7 @@ function validateTaxClearanceManual(content, contentLower, pages, keyValuePairs,
     suggestedActions.push("Verify the certificate has been signed by an authorized official");
   }
 
-  return { 
+  return {
     missingElements, 
     suggestedActions,
     detectedOrganizationName
@@ -541,7 +543,7 @@ function validateCertificateOfFormation(content, contentLower, pages, keyValuePa
   
   // Look for entity name in the document
   // Method 1: Check by "Name:" keyword
-  const nameMatch = content.match(/name:\s*([^\r\n]+)/i);
+  const nameMatch = content.match(/name:\s*([^\r\n]+)/i) || content.match(/name of domestic corporation:\s*([^\r\n]+)/i) || content.match(/the name of the limited liability company is\s*([^\r\n]+)/i);
   if (nameMatch && nameMatch[1] && nameMatch[1].trim().length > 0) {
     detectedOrganizationName = nameMatch[1].trim();
   }
@@ -591,30 +593,30 @@ function validateCertificateOfFormation(content, contentLower, pages, keyValuePa
   }
   
   // Check for entity ID/identification number
-  const hasEntityID = /identification number|entity id|entity number|filed number/i.test(content);
+  const hasEntityID = /identification number|entity id|entity number|business id number|filed number/i.test(content);
   if (!hasEntityID) {
     missingElements.push("Entity ID/identification number");
     suggestedActions.push("Verify document shows entity identification number");
   }
   
   // Check for filing date
-  const hasFilingDate = /duly filed|filed in accordance|filed on|filing date/i.test(content);
+  const hasFilingDate = /duly filed|filed in accordance|date|filed on|filing date/i.test(content);
   if (!hasFilingDate) {
     missingElements.push("Filing date");
     suggestedActions.push("Verify document shows filing date");
   }
   
   // Check for state seal
-  const hasStateSeal = /official seal|seal of the state|great seal/i.test(content) || 
-                      contentLower.includes("seal") && 
-                      (contentLower.includes("affixed") || 
-                       contentLower.includes("testimony") || 
-                       contentLower.includes("whereof"));
+  // const hasStateSeal = /official seal|seal of the state|great seal/i.test(content) || 
+  //                     contentLower.includes("seal") && 
+  //                     (contentLower.includes("affixed") || 
+  //                      contentLower.includes("testimony") || 
+  //                      contentLower.includes("whereof"));
   
-  if (!hasStateSeal) {
-    missingElements.push("NJ State Seal");
-    suggestedActions.push("Verify document contains the NJ state seal");
-  }
+  // if (!hasStateSeal) {
+  //   missingElements.push("NJ State Seal");
+  //   suggestedActions.push("Verify document contains the NJ state seal");
+  // }
   
   // Check for signature of state official
   const hasSignature = /signature|signed|authorized representative/i.test(content) ||
@@ -635,7 +637,6 @@ function validateCertificateOfFormation(content, contentLower, pages, keyValuePa
   
   // Check for key sections that should be in a certificate of formation
   const requiredSections = [
-    { name: "Business purpose", regex: /business\s+purpose/i },
     { name: "Registered agent", regex: /registered\s+agent/i },
     { name: "Registered office", regex: /registered\s+office/i }
   ];
@@ -1008,15 +1009,6 @@ function validateIRSDeterminationLetter(content, contentLower, pages, keyValuePa
   const missingElements = [];
   const suggestedActions = [];
   
-  // Check for letter number/catalog number
-  const hasLetterInfo = contentLower.includes("letter 5274") || 
-                        contentLower.includes("determination letter");
-  
-  if (!hasLetterInfo) {
-    missingElements.push("Letter number (Letter 5274 or similar)");
-    suggestedActions.push("Verify the document shows a letter/form number at the bottom of pages");
-  }
-  
   // Check for IRS letterhead
   const hasIRSLetterhead = contentLower.includes("internal revenue service") || 
                           contentLower.includes("department of the treasury");
@@ -1053,13 +1045,13 @@ function validateIRSDeterminationLetter(content, contentLower, pages, keyValuePa
   }
   
   // Check for 'favorable determination' language
-  const hasFavorableDetermination = contentLower.includes("favorable determination") || 
-                                   contentLower.includes("we are issuing this favorable");
+  // const hasFavorableDetermination = contentLower.includes("favorable determination") || 
+  //                                  contentLower.includes("we are issuing this favorable");
   
-  if (!hasFavorableDetermination) {
-    missingElements.push("Favorable determination statement");
-    suggestedActions.push("Verify the letter explicitly states it is a favorable determination");
-  }
+  // if (!hasFavorableDetermination) {
+  //   missingElements.push("Favorable determination statement");
+  //   suggestedActions.push("Verify the letter explicitly states it is a favorable determination");
+  // }
   
   // Check for Date and it being within 15 years (usual IRS determination validity)
   let hasRecentDate = false;
@@ -1086,31 +1078,30 @@ function validateIRSDeterminationLetter(content, contentLower, pages, keyValuePa
   }
   
   // Check for Director's signature
-  const hasDirectorSignature = contentLower.includes("director") && 
-                              (contentLower.includes("sincerely") || 
-                               contentLower.includes("signature"));
+  // const hasDirectorSignature = contentLower.includes("director") ||
+  //                             contentLower.includes("sincerely");
   
-  if (!hasDirectorSignature) {
-    missingElements.push("Director's signature");
-    suggestedActions.push("Verify the letter contains the signature of an IRS Director/official");
-  }
+  // if (!hasDirectorSignature) {
+  //   missingElements.push("Director's signature");
+  //   suggestedActions.push("Verify the letter contains the signature of an IRS Director/official");
+  // }
   
   // Check for amendments information (specific to this type of letter)
-  const hasAmendmentsInfo = contentLower.includes("amendments dated");
+  // const hasAmendmentsInfo = contentLower.includes("amendments dated");
   
-  if (!hasAmendmentsInfo) {
-    missingElements.push("Amendments information");
-    suggestedActions.push("Verify the letter references specific plan amendments");
-  }
+  // if (!hasAmendmentsInfo) {
+  //   missingElements.push("Amendments information");
+  //   suggestedActions.push("Verify the letter references specific plan amendments");
+  // }
   
-  // Check for expiration information
-  const hasExpirationInfo = contentLower.includes("expires on") || 
-                           contentLower.match(/this\s+letter\s+expires/i);
+  // // Check for expiration information
+  // const hasExpirationInfo = contentLower.includes("expires on") || 
+  //                          contentLower.match(/this\s+letter\s+expires/i);
   
-  if (!hasExpirationInfo) {
-    missingElements.push("Expiration information");
-    suggestedActions.push("Verify the letter specifies an expiration date");
-  }
+  // if (!hasExpirationInfo) {
+  //   missingElements.push("Expiration information");
+  //   suggestedActions.push("Verify the letter specifies an expiration date");
+  // }
   
   return { 
     missingElements, 
@@ -1251,18 +1242,22 @@ function validateCertificateOfAuthority(content, contentLower, pages, keyValuePa
 
 // Helper function to check if a date in the document is within the last 6 months
 function checkDateWithinSixMonths(content) {
-  const dateRegex = /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/g;
-  const dateMatches = [...content.matchAll(dateRegex)];
+  // Match numeric date formats like MM/DD/YYYY or DD/MM/YYYY
+  const numericDateRegex = /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/g;
+  const numericDateMatches = [...content.matchAll(numericDateRegex)];
 
-  if (dateMatches.length === 0) {
-    return false;
-  }
+  // Match written date formats like "January 15, 2023" or "15 January 2023"
+  const monthNames = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+  const monthPattern = monthNames.join('|');
+  const writtenDateRegex = new RegExp(`(${monthPattern})\\s+(\\d{1,2})(?:st|nd|rd|th)?[,\\s]+?(\\d{4})|(\\d{1,2})(?:st|nd|rd|th)?\\s+(${monthPattern})[,\\s]+?(\\d{4})`, 'gi');
+  const writtenDateMatches = [...content.matchAll(writtenDateRegex)];
 
   const now = new Date();
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(now.getMonth() - 6);
 
-  for (const match of dateMatches) {
+  // Check numeric dates
+  for (const match of numericDateMatches) {
     const parts = [parseInt(match[1]), parseInt(match[2]), parseInt(match[3])];
 
     // Try MM/DD/YYYY
@@ -1284,6 +1279,36 @@ function checkDateWithinSixMonths(content) {
     }
   }
 
+  // Check written dates
+  for (const match of writtenDateMatches) {
+    let month, day, year;
+    
+    // Format: "January 15, 2023"
+    if (match[1]) {
+      month = monthNames.indexOf(match[1].toLowerCase());
+      day = parseInt(match[2]);
+      year = parseInt(match[3]);
+    } 
+    // Format: "15 January 2023"
+    else {
+      day = parseInt(match[4]);
+      month = monthNames.indexOf(match[5].toLowerCase());
+      year = parseInt(match[6]);
+    }
+
+    if (month !== -1) {
+      const date = new Date(year, month, day);
+      if (
+        date instanceof Date &&
+        !isNaN(date) &&
+        date >= sixMonthsAgo &&
+        date <= now
+      ) {
+        return true;
+      }
+    }
+  }
+
   return false;
 }
 
@@ -1298,11 +1323,11 @@ function validateCertificateOfTradeName(content, contentLower, pages, keyValuePa
   }
   
   // Check for N.J.S.A. statute reference
-  const hasNJSAStatute = content.includes("N.J.S.A.");
-  if (!hasNJSAStatute) {
-    missingElements.push("N.J.S.A. statute reference");
-    suggestedActions.push("Verify document is the standard Certificate of Trade Name showing N.J.S.A. statute");
-  }
+  // const hasNJSAStatute = content.includes("N.J.S.A.");
+  // if (!hasNJSAStatute) {
+  //   missingElements.push("N.J.S.A. statute reference");
+  //   suggestedActions.push("Verify document is the standard Certificate of Trade Name showing N.J.S.A. statute");
+  // }
   
   return { 
     missingElements, 

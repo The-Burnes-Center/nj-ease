@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Upload, CheckCircle, FileWarning, AlertCircle, Download, FileText } from 'lucide-react';
 
 export default function EnhancedDocumentValidator() {
@@ -20,6 +20,11 @@ export default function EnhancedDocumentValidator() {
   const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
   const [feedbackSuccess, setFeedbackSuccess] = useState(false);
   const [feedbackError, setFeedbackError] = useState(null);
+  const [requiredFields, setRequiredFields] = useState({
+    organizationName: false,
+    ownerName: false,
+    fein: false
+  });
 
   const documentTypes =  [
     { value: 'tax-clearance-online', label: 'Tax Clearance Certificate (Online Generated)' },
@@ -35,6 +40,41 @@ export default function EnhancedDocumentValidator() {
     { value: 'bylaws', label: 'By-laws' },
     { value: 'cert-authority', label: 'Certificate of Authority' }
   ];
+
+  // Set required fields based on document type
+  useEffect(() => {
+    const newRequiredFields = {
+      organizationName: false,
+      ownerName: false,
+      fein: false
+    };
+    
+    switch(documentType) {
+      case 'tax-clearance-online':
+      case 'tax-clearance-manual':
+        newRequiredFields.organizationName = true;
+        newRequiredFields.fein = true;
+        break;
+      case 'operating-agreement':
+        newRequiredFields.organizationName = true;
+        newRequiredFields.ownerName = true;
+        break;
+      case 'cert-formation':
+      case 'cert-good-standing-long':
+      case 'cert-good-standing-short':
+      case 'cert-incorporation':
+        newRequiredFields.organizationName = true;
+        break;
+      default:
+        break;
+    }
+    
+    setRequiredFields(newRequiredFields);
+    
+    // Reset validation result when document type changes
+    setValidationResult(null);
+    setError(null);
+  }, [documentType]);
 
   const handleFileChange = (e) => {
     const selectedFile = e.target.files[0];
@@ -64,7 +104,6 @@ export default function EnhancedDocumentValidator() {
 
   const validateDocument = async () => {
     if (!file) return;
-
     setIsUploading(true);
     setError(null);
     
@@ -135,87 +174,6 @@ export default function EnhancedDocumentValidator() {
     }
   };
 
-  // Function to determine which form fields to show based on document type
-  const getFormFieldsForDocumentType = () => {
-    switch(documentType) {
-      case 'tax-clearance-online':
-      case 'tax-clearance-manual':
-        return (
-          <>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
-              <input
-                type="text"
-                name="organizationName"
-                value={formFields.organizationName}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 text-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                placeholder="Enter organization name"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">FEIN (Federal Employer Identification Number)</label>
-              <input
-                type="text"
-                name="fein"
-                value={formFields.fein}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600"
-                placeholder="Enter FEIN"
-              />
-              <p className="text-xs text-gray-500 mt-1">This will be used to verify the last 3 digits on the tax clearance</p>
-            </div>
-          </>
-        );
-      case 'operating-agreement':
-        return (
-          <>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
-              <input
-                type="text"
-                name="organizationName"
-                value={formFields.organizationName}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600"
-                placeholder="Enter organization name"
-              />
-            </div>
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Member Names (comma separated)</label>
-              <input
-                type="text"
-                name="ownerName"
-                value={formFields.ownerName}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600"
-                placeholder="Enter member names"
-              />
-              <p className="text-xs text-gray-500 mt-1">We'll check if these members are listed in the document</p>
-            </div>
-          </>
-        );
-      case 'cert-formation':
-      case 'cert-good-standing-long':
-      case 'cert-good-standing-short':
-        return (
-          <div className="mb-4">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
-            <input
-              type="text"
-              name="organizationName"
-              value={formFields.organizationName}
-              onChange={handleInputChange}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              placeholder="Enter organization name"
-            />
-          </div>
-        );
-      default:
-        return null;
-    }
-  };
-
   return (
     <div className="container mx-auto">
       <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
@@ -233,8 +191,6 @@ export default function EnhancedDocumentValidator() {
               value={documentType}
               onChange={(e) => {
                 setDocumentType(e.target.value);
-                setValidationResult(null);
-                setError(null);
               }}
               className="w-full px-3 py-2 border border-gray-300 text-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
@@ -246,7 +202,52 @@ export default function EnhancedDocumentValidator() {
             </select>
           </div>
           
-          {getFormFieldsForDocumentType()}
+          {/* Centralized form fields */}
+          <div className="mb-5">
+            {requiredFields.organizationName && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
+                <input
+                  type="text"
+                  name="organizationName"
+                  value={formFields.organizationName}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 text-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  placeholder="Enter organization name"
+                />
+              </div>
+            )}
+            
+            {requiredFields.fein && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">FEIN (Federal Employer Identification Number)</label>
+                <input
+                  type="text"
+                  name="fein"
+                  value={formFields.fein}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600"
+                  placeholder="Enter FEIN"
+                />
+                <p className="text-xs text-gray-500 mt-1">This will be used to verify the last 3 digits on the tax clearance</p>
+              </div>
+            )}
+            
+            {requiredFields.ownerName && (
+              <div className="mb-4">
+                <label className="block text-sm font-medium text-gray-700 mb-1">Member Names (comma separated)</label>
+                <input
+                  type="text"
+                  name="ownerName"
+                  value={formFields.ownerName}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600"
+                  placeholder="Enter member names"
+                />
+                <p className="text-xs text-gray-500 mt-1">We'll check if these members are listed in the document</p>
+              </div>
+            )}
+          </div>
           
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-1">Upload Document</label>
