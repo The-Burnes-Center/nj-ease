@@ -1134,14 +1134,6 @@ function validateIRSDeterminationLetter(content, contentLower, pages, keyValuePa
     suggestedActions.push("Verify the letter is on IRS letterhead showing 'Internal Revenue Service'");
   }
   
-  // Check for DLN (Document Locator Number)
-  const hasDLN = contentLower.includes("dln:");
-  
-  if (!hasDLN) {
-    missingElements.push("DLN (Document Locator Number)");
-    suggestedActions.push("Verify the letter includes a DLN number");
-  }
-  
   // Check for Employer Identification Number (EIN/FEIN)
   const hasEIN = contentLower.includes("employer identification number") || 
                 contentLower.match(/ein\s*:/i);
@@ -1169,30 +1161,6 @@ function validateIRSDeterminationLetter(content, contentLower, pages, keyValuePa
   //   suggestedActions.push("Verify the letter explicitly states it is a favorable determination");
   // }
   
-  // Check for Date and it being within 15 years (usual IRS determination validity)
-  let hasRecentDate = false;
-  const dateMatches = content.match(/\b(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)\s+\d{1,2},?\s+\d{4}\b/gi) || 
-                     content.match(/\b\d{1,2}\/\d{1,2}\/\d{2,4}\b/g);
-  
-  if (dateMatches) {
-    const now = new Date();
-    const fifteenYearsAgo = new Date();
-    fifteenYearsAgo.setFullYear(now.getFullYear() - 15);
-    
-    for (const dateStr of dateMatches) {
-      const date = new Date(dateStr);
-      if (!isNaN(date) && date >= fifteenYearsAgo) {
-        hasRecentDate = true;
-        break;
-      }
-    }
-  }
-  
-  if (!hasRecentDate) {
-    missingElements.push("Recent date (within the past 15 years)");
-    suggestedActions.push("Verify the determination letter is still valid (typically valid for up to 15 years)");
-  }
-  
   // Check for Director's signature
   // const hasDirectorSignature = contentLower.includes("director") ||
   //                             contentLower.includes("sincerely");
@@ -1208,15 +1176,6 @@ function validateIRSDeterminationLetter(content, contentLower, pages, keyValuePa
   // if (!hasAmendmentsInfo) {
   //   missingElements.push("Amendments information");
   //   suggestedActions.push("Verify the letter references specific plan amendments");
-  // }
-  
-  // // Check for expiration information
-  // const hasExpirationInfo = contentLower.includes("expires on") || 
-  //                          contentLower.match(/this\s+letter\s+expires/i);
-  
-  // if (!hasExpirationInfo) {
-  //   missingElements.push("Expiration information");
-  //   suggestedActions.push("Verify the letter specifies an expiration date");
   // }
   
   return { 
