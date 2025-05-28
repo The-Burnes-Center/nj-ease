@@ -32,6 +32,7 @@ export default function EnhancedDocumentValidator() {
     { value: 'cert-alternative-name', label: 'Certificate of Alternative Name' },
     { value: 'cert-trade-name', label: 'Certificate of Trade Name' },
     { value: 'cert-formation', label: 'Certificate of Formation' },
+    { value: 'cert-formation-independent', label: 'Certificate of Formation - Independent' },
     { value: 'cert-good-standing-long', label: 'Certificate of Good Standing (Long Form)' },
     { value: 'cert-good-standing-short', label: 'Certificate of Good Standing (Short Form)' },
     { value: 'operating-agreement', label: 'Operating Agreement' },
@@ -60,6 +61,7 @@ export default function EnhancedDocumentValidator() {
         newRequiredFields.ownerName = true;
         break;
       case 'cert-formation':
+      case 'cert-formation-independent':
       case 'cert-good-standing-long':
       case 'cert-good-standing-short':
       case 'cert-incorporation':

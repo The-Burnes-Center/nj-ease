@@ -120,6 +120,8 @@ function validateDocumentByType(options) {
       return validateCertificateOfTradeName(content, contentLower, pages, keyValuePairs);
     case 'cert-formation':
       return validateCertificateOfFormation(content, contentLower, pages, keyValuePairs, formFields);
+    case 'cert-formation-independent':
+      return validateCertificateOfFormationIndependent(content, contentLower, pages, keyValuePairs, formFields);
     case 'cert-good-standing-long':
       return validateCertificateOfGoodStandingLong(content, contentLower, pages, keyValuePairs, formFields);
     case 'cert-good-standing-short':
@@ -591,6 +593,120 @@ function validateCertificateOfFormation(content, contentLower, pages, keyValuePa
     missingElements.push("New Jersey Department of the Treasury/Division of Revenue");
     suggestedActions.push("Verify certificate is issued by the NJ Department of the Treasury");
   }
+  
+  // Check for entity ID/identification number
+  const hasEntityID = /identification number|entity id|entity number|business id number|filed number/i.test(content);
+  if (!hasEntityID) {
+    missingElements.push("Entity ID/identification number");
+    suggestedActions.push("Verify document shows entity identification number");
+  }
+  
+  // Check for filing date
+  const hasFilingDate = /duly filed|filed in accordance|date|filed on|filing date/i.test(content);
+  if (!hasFilingDate) {
+    missingElements.push("Filing date");
+    suggestedActions.push("Verify document shows filing date");
+  }
+  
+  // Check for state seal
+  // const hasStateSeal = /official seal|seal of the state|great seal/i.test(content) || 
+  //                     contentLower.includes("seal") && 
+  //                     (contentLower.includes("affixed") || 
+  //                      contentLower.includes("testimony") || 
+  //                      contentLower.includes("whereof"));
+  
+  // if (!hasStateSeal) {
+  //   missingElements.push("NJ State Seal");
+  //   suggestedActions.push("Verify document contains the NJ state seal");
+  // }
+  
+  // Check for signature of state official
+  const hasSignature = /signature|signed|authorized representative/i.test(content) ||
+                      /state treasurer|treasurer/i.test(content);
+  
+  if (!hasSignature) {
+    missingElements.push("Signature of authorized state official");
+    suggestedActions.push("Verify document has been signed by an authorized state official");
+  }
+  
+  // Check for verification info
+  const hasVerificationInfo = /verify this certificate|verification|certification/i.test(content);
+  
+  if (!hasVerificationInfo) {
+    missingElements.push("Certificate verification information");
+    suggestedActions.push("Verify document contains certificate verification information");
+  }
+  
+  // Check for key sections that should be in a certificate of formation
+  const requiredSections = [
+    { name: "Registered agent", regex: /registered\s+agent/i },
+    { name: "Registered office", regex: /registered\s+office/i }
+  ];
+  
+  for (const section of requiredSections) {
+    if (!section.regex.test(content)) {
+      missingElements.push(`${section.name} section`);
+      suggestedActions.push(`Verify document contains ${section.name.toLowerCase()} information`);
+    }
+  }
+  
+  return { 
+    missingElements, 
+    suggestedActions,
+    detectedOrganizationName
+  };
+}
+
+// Validation for Certificate of Formation - Independent
+function validateCertificateOfFormationIndependent(content, contentLower, pages, keyValuePairs, formFields) {
+  const missingElements = [];
+  const suggestedActions = [];
+  let detectedOrganizationName = null;
+  
+  // Look for entity name in the document
+  // Method 1: Check by "Name:" keyword
+  const nameMatch = content.match(/name:\s*([^\r\n]+)/i) || content.match(/name of domestic corporation:\s*([^\r\n]+)/i) || content.match(/the name of the limited liability company is\s*([^\r\n]+)/i);
+  if (nameMatch && nameMatch[1] && nameMatch[1].trim().length > 0) {
+    detectedOrganizationName = nameMatch[1].trim();
+  }
+  
+  // Method 2: Check from "The above-named" text
+  if (!detectedOrganizationName) {
+    const aboveNamedMatch = content.match(/above-named\s+([^was]+)was/i);
+    if (aboveNamedMatch && aboveNamedMatch[1] && aboveNamedMatch[1].trim().length > 0) {
+      detectedOrganizationName = aboveNamedMatch[1].trim();
+    }
+  }
+  
+  // Method 3: Try to extract from key-value pairs
+  if (!detectedOrganizationName) {
+    const namePair = keyValuePairs.find(pair => 
+      pair.key && pair.key.content && 
+      pair.key.content.toLowerCase().trim() === 'name:'
+    );
+    
+    if (namePair && namePair.value) {
+      detectedOrganizationName = namePair.value.content;
+    }
+  }
+  
+  // Check for organization name match if provided
+  if (formFields.organizationName && detectedOrganizationName) {
+    const orgNameLower = formFields.organizationName.toLowerCase().trim();
+    const detectedOrgNameLower = detectedOrganizationName.toLowerCase().trim();
+    
+    if (!detectedOrgNameLower.includes(orgNameLower) && !orgNameLower.includes(detectedOrgNameLower)) {
+      missingElements.push("Organization name doesn't match the one on the certificate");
+      suggestedActions.push("Verify that the correct organization name was entered");
+    }
+  }
+  
+  // Check for required elements
+  if (!contentLower.includes("certificate of formation")) {
+    missingElements.push("Required text: 'Certificate of Formation'");
+  }
+
+  // Check for stamp - NOT HERE YET
   
   // Check for entity ID/identification number
   const hasEntityID = /identification number|entity id|entity number|business id number|filed number/i.test(content);
