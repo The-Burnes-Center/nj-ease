@@ -136,6 +136,8 @@ function validateDocumentByType(options) {
       return validateBylaws(content, contentLower, pages, keyValuePairs);
     case 'cert-authority':
       return validateCertificateOfAuthority(content, contentLower, pages, keyValuePairs);
+    case 'cert-authority-auto':
+      return validateCertificateOfAuthorityAutomatic(content, contentLower, pages, keyValuePairs);
     default:
       return { 
         missingElements: ["Unknown document type"],
@@ -1380,6 +1382,27 @@ function checkDateWithinSixMonths(content) {
         date <= now
       ) {
         return true;
+      }
+    }
+
+      // Format: "13th day of May, 2023"
+    const ordinalDateRegex = /(\d{1,2})(st|nd|rd|th)? day of (\w+),\s*(\d{4})/gi;
+    let ordinalMatch;
+    while ((ordinalMatch = ordinalDateRegex.exec(content)) !== null) {
+      let day = parseInt(ordinalMatch[1]);
+      let month = monthNames.indexOf(ordinalMatch[3].toLowerCase());
+      let year = parseInt(ordinalMatch[4]);
+
+      if (month !== -1) {
+        const date = new Date(year, month, day);
+        if (
+          date instanceof Date &&
+          !isNaN(date) &&
+          date >= sixMonthsAgo &&
+          date <= now
+        ) {
+          return true;
+        }
       }
     }
   }
