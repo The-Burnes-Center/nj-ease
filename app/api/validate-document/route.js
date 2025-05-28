@@ -1317,6 +1317,53 @@ function validateCertificateOfAuthority(content, contentLower, pages, keyValuePa
   };
 }
 
+// Validation for Certificate of Authority - Automatic
+function validateCertificateOfAuthority(content, contentLower, pages, keyValuePairs) {
+  const missingElements = [];
+  const suggestedActions = [];
+  
+  // Check for required elements
+  if (!contentLower.includes("certificate of authority")) {
+    missingElements.push("Required text: 'Certificate of Authority'");
+  }
+  
+  // Check for state seal
+  const hasStateSeal = contentLower.includes("state seal") || 
+                      contentLower.includes("great seal") || 
+                      contentLower.includes("state of new jersey");
+  
+  if (!hasStateSeal) {
+    missingElements.push("State seal");
+    suggestedActions.push("Verify the certificate contains the state seal");
+  }
+  
+  // Check for applicant's name
+  const hasApplicantName = keyValuePairs.some(pair => 
+    pair.key && pair.key.content && 
+    (pair.key.content.toLowerCase().includes('name') || 
+     pair.key.content.toLowerCase().includes('entity'))
+  );
+  
+  if (!hasApplicantName) {
+    missingElements.push("Applicant's name");
+    suggestedActions.push("Verify the certificate includes the applicant's name");
+  }
+  
+  // Check for issuance date
+  const hasIssuanceDate = /date[d]?(\s*on)?:|dated|issuance date|issued on/i.test(content) || 
+                          /\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}/.test(content);
+  
+  if (!hasIssuanceDate) {
+    missingElements.push("Issuance date");
+    suggestedActions.push("Verify the certificate includes an issuance date");
+  }
+  
+  return { 
+    missingElements, 
+    suggestedActions
+  };
+}
+
 // Helper function to check if a date in the document is within the last 6 months
 function checkDateWithinSixMonths(content) {
   // Match numeric date formats like MM/DD/YYYY or DD/MM/YYYY
