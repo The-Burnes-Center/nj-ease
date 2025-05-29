@@ -1318,7 +1318,7 @@ function validateCertificateOfAuthority(content, contentLower, pages, keyValuePa
 }
 
 // Validation for Certificate of Authority - Automatic
-function validateCertificateOfAuthority(content, contentLower, pages, keyValuePairs) {
+function validateCertificateOfAuthorityAutomatic(content, contentLower, pages, keyValuePairs) {
   const missingElements = [];
   const suggestedActions = [];
   
