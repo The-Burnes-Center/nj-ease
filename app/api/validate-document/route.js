@@ -1290,18 +1290,6 @@ function validateCertificateOfAuthority(content, contentLower, pages, keyValuePa
     suggestedActions.push("Verify the certificate has a watermark in the background");
   }
   
-  // Check for applicant's name
-  const hasApplicantName = keyValuePairs.some(pair => 
-    pair.key && pair.key.content && 
-    (pair.key.content.toLowerCase().includes('name') || 
-     pair.key.content.toLowerCase().includes('entity'))
-  );
-  
-  if (!hasApplicantName) {
-    missingElements.push("Applicant's name");
-    suggestedActions.push("Verify the certificate includes the applicant's name");
-  }
-  
   // Check for issuance date
   const hasIssuanceDate = /date[d]?(\s*on)?:|dated|issuance date|issued on/i.test(content) || 
                           /\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}/.test(content);
