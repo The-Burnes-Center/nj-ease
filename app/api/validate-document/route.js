@@ -550,18 +550,6 @@ function validateCertificateAlternativeName(content, contentLower, pages, keyVal
     missingElements.push("Division of Revenue");
     suggestedActions.push("Verify document contains 'Division of Revenue'");
   }
-  
-  // Check for Mail to PO Box and Fee Required
-  const hasMailToInfo = contentLower.includes("mail to:") && contentLower.includes("po box 308") && contentLower.includes("trenton, nj 08646");
-  const hasFeeRequired = contentLower.includes("fee required");
-  
-  if (!hasMailToInfo) {
-    missingElements.push("'Mail to PO Box' text");
-  }
-  
-  if (!hasFeeRequired) {
-    missingElements.push("'Fee Required' text");
-  }
 
   return { 
     missingElements, 
