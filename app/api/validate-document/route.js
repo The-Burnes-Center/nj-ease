@@ -988,33 +988,6 @@ function validateOperatingAgreement(content, contentLower, pages, keyValuePairs,
     missingElements.push("Required text: 'Operating Agreement'");
   }
   
-  // Check for members match if provided
-  if (formFields.ownerName) {
-    const memberNames = formFields.ownerName.split(',').map(name => name.trim().toLowerCase());
-    let foundMemberCount = 0;
-    
-    // Look for member names in Exhibit 1 and signature sections
-    const exhibitSection = contentLower.includes("exhibit 1") || contentLower.includes("listing of members");
-    const signatureSection = contentLower.includes("signature") && contentLower.includes("printed name");
-    
-    // If both sections exist, check for member names
-    if (exhibitSection || signatureSection) {
-      for (const memberName of memberNames) {
-        if (memberName.length > 2 && contentLower.includes(memberName)) {
-          foundMemberCount++;
-        }
-      }
-      
-      if (foundMemberCount !== memberNames.length) {
-        missingElements.push("Member names don't all appear in the agreement");
-        suggestedActions.push("Verify that the names of all members are correctly listed in the agreement");
-      }
-    } else {
-      missingElements.push("Member listing section or signature section");
-      suggestedActions.push("Verify the agreement contains a member listing (Exhibit 1) or signature section");
-    }
-  }
-  
   // Check for signatures
   const hasSignatures = contentLower.includes("signature") || 
                        contentLower.includes("signed by") || 

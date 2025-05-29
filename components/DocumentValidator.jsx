@@ -47,7 +47,6 @@ export default function EnhancedDocumentValidator() {
   useEffect(() => {
     const newRequiredFields = {
       organizationName: false,
-      ownerName: false,
       fein: false
     };
     
@@ -59,7 +58,6 @@ export default function EnhancedDocumentValidator() {
         break;
       case 'operating-agreement':
         newRequiredFields.organizationName = true;
-        newRequiredFields.ownerName = true;
         break;
       case 'cert-formation':
       case 'cert-formation-independent':
@@ -233,21 +231,6 @@ export default function EnhancedDocumentValidator() {
                   placeholder="Enter FEIN"
                 />
                 <p className="text-xs text-gray-500 mt-1">This will be used to verify the last 3 digits on the tax clearance</p>
-              </div>
-            )}
-            
-            {requiredFields.ownerName && (
-              <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Member Names (comma separated)</label>
-                <input
-                  type="text"
-                  name="ownerName"
-                  value={formFields.ownerName}
-                  onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600"
-                  placeholder="Enter member names"
-                />
-                <p className="text-xs text-gray-500 mt-1">We'll check if these members are listed in the document</p>
               </div>
             )}
           </div>
