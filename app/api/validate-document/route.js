@@ -297,23 +297,19 @@ function validateTaxClearanceOnline(content, contentLower, pages, keyValuePairs,
     }
   }
   
-  // Check for agency - support multiple possible agencies
-  const acceptableAgencies = [
+  // Check for agency - reject Department of Environmental Protection
+  const rejectedAgencies = [
     "department of environmental protection",
     "environmental protection",
-    "new jersey economic development authority",
-    "economic development authority",
-    "njeda",
-    "new jersey board of public utilities",
   ];
   
-  const hasAcceptableAgency = acceptableAgencies.some(agency => 
+  const hasRejectedAgency = rejectedAgencies.some(agency => 
     contentLower.includes(agency)
   );
   
-  if (!hasAcceptableAgency) {
-    missingElements.push("Required agency: Missing acceptable agency reference");
-    suggestedActions.push("Verify that the certificate was issued for an appropriate agency");
+  if (hasRejectedAgency) {
+    missingElements.push("Agency error: Document contains reference to Department of Environmental Protection");
+    suggestedActions.push("This agency is not accepted. Please provide a certificate for a different agency");
   }
   
   // Check for date within 6 months
@@ -474,22 +470,19 @@ function validateTaxClearanceManual(content, contentLower, pages, keyValuePairs,
     }
   }
   
-  // Check for agency - support multiple possible agencies
-  const acceptableAgencies = [
+  // Check for agency - reject Department of Environmental Protection
+  const rejectedAgencies = [
     "department of environmental protection",
     "environmental protection",
-    "new jersey economic development authority",
-    "economic development authority",
-    "njeda"
   ];
   
-  const hasAcceptableAgency = acceptableAgencies.some(agency => 
+  const hasRejectedAgency = rejectedAgencies.some(agency => 
     contentLower.includes(agency)
   );
   
-  if (!hasAcceptableAgency) {
-    missingElements.push("Required agency: Missing acceptable agency reference");
-    suggestedActions.push("Verify that the certificate was issued for an appropriate agency");
+  if (hasRejectedAgency) {
+    missingElements.push("Agency error: Document contains reference to Department of Environmental Protection");
+    suggestedActions.push("This agency is not accepted. Please provide a certificate for a different agency");
   }
   
   // Check for date within 6 months
