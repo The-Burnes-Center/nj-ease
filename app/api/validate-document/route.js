@@ -135,7 +135,7 @@ function validateDocumentByType(options) {
     case 'bylaws':
       return validateBylaws(content, contentLower, pages, keyValuePairs);
     case 'cert-authority':
-      return validateCertificateOfAuthority(content, contentLower, pages, keyValuePairs);
+      return validateCertificateOfAuthority(content, contentLower, pages, keyValuePairs, formFields);
     case 'cert-authority-auto':
       return validateCertificateOfAuthorityAutomatic(content, contentLower, pages, keyValuePairs);
     default:
@@ -1262,9 +1262,10 @@ function validateBylaws(content, contentLower, pages, keyValuePairs) {
 }
 
 // Validation for Certificate of Authority
-function validateCertificateOfAuthority(content, contentLower, pages, keyValuePairs) {
+function validateCertificateOfAuthority(content, contentLower, pages, keyValuePairs, formFields) {
   const missingElements = [];
   const suggestedActions = [];
+  let detectedOrganizationName = null;
   
   // Check for required elements
   if (!contentLower.includes("certificate of authority")) {
@@ -1290,16 +1291,53 @@ function validateCertificateOfAuthority(content, contentLower, pages, keyValuePa
     suggestedActions.push("Verify the certificate has a watermark in the background");
   }
   
-  // Check for applicant's name
-  const hasApplicantName = keyValuePairs.some(pair => 
+  // Extract applicant name from document
+  // Try to find organization name from key-value pairs first
+  const namePair = keyValuePairs.find(pair => 
     pair.key && pair.key.content && 
     (pair.key.content.toLowerCase().includes('name') || 
-     pair.key.content.toLowerCase().includes('entity'))
+     pair.key.content.toLowerCase().includes('entity') ||
+     pair.key.content.toLowerCase().includes('applicant'))
   );
   
-  if (!hasApplicantName) {
-    missingElements.push("Applicant's name");
+  if (namePair && namePair.value) {
+    detectedOrganizationName = namePair.value.content;
+  }
+  
+  // If not found in key-value pairs, try to extract from content
+  if (!detectedOrganizationName) {
+    // Look for patterns like "Name: [Organization Name]" or similar
+    const nameMatch = content.match(/(?:name|entity|applicant):\s*([^\r\n]+)/i);
+    if (nameMatch && nameMatch[1] && nameMatch[1].trim().length > 0) {
+      detectedOrganizationName = nameMatch[1].trim();
+    }
+  }
+  
+  // Check for organization name match if provided
+  if (formFields.organizationName && detectedOrganizationName) {
+    const orgNameLower = formFields.organizationName.toLowerCase().trim();
+    const detectedOrgNameLower = detectedOrganizationName.toLowerCase().trim();
+    
+    if (!detectedOrgNameLower.includes(orgNameLower) && !orgNameLower.includes(detectedOrgNameLower)) {
+      missingElements.push("Organization name doesn't match the one on the certificate");
+      suggestedActions.push("Verify that the correct organization name was entered");
+    }
+  } else if (formFields.organizationName && !detectedOrganizationName) {
+    missingElements.push("Applicant's name not found in document");
     suggestedActions.push("Verify the certificate includes the applicant's name");
+  } else if (!formFields.organizationName) {
+    // If no organization name provided but we need to check for presence
+    const hasApplicantName = detectedOrganizationName || 
+                            keyValuePairs.some(pair => 
+                              pair.key && pair.key.content && 
+                              (pair.key.content.toLowerCase().includes('name') || 
+                               pair.key.content.toLowerCase().includes('entity'))
+                            );
+    
+    if (!hasApplicantName) {
+      missingElements.push("Applicant's name");
+      suggestedActions.push("Verify the certificate includes the applicant's name");
+    }
   }
   
   // Check for issuance date
@@ -1313,10 +1351,10 @@ function validateCertificateOfAuthority(content, contentLower, pages, keyValuePa
   
   return { 
     missingElements, 
-    suggestedActions
+    suggestedActions,
+    detectedOrganizationName
   };
 }
-
 // Validation for Certificate of Authority - Automatic
 function validateCertificateOfAuthorityAutomatic(content, contentLower, pages, keyValuePairs) {
   const missingElements = [];
