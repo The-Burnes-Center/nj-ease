@@ -15,89 +15,110 @@ function* getTextOfSpans(content, spans) {
 
 export async function POST(request) {
   try {
-    // Parse the form data
-    const formData = await request.formData();
-    const file = formData.get("file");
-    const documentType = formData.get("documentType") || "tax-clearance-online";
-    
-    // Get additional form fields
-    const organizationName = formData.get("organizationName") || "";
-    const ownerName = formData.get("ownerName") || "";
-    const fein = formData.get("fein") || "";
-
-    if (!file) {
-      return NextResponse.json(
-        { error: "No file provided" },
-        { status: 400 }
-      );
-    }
-
-    // Convert the file into a Buffer
-    const buffer = Buffer.from(await file.arrayBuffer());
-    // Determine the file's content type
-    const contentType = file.type || "application/octet-stream";
-
-    // Create the Document Intelligence Client
-    const client = new DocumentAnalysisClient(endpoint, new AzureKeyCredential(key));
-
-    // Analyze the document - using prebuilt-document for more advanced structure analysis
-    const poller = await client.beginAnalyzeDocument("prebuilt-document", buffer, {
-      contentType, 
+    // Set a timeout to abort if processing takes too long
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Processing timeout")), 50000); // 50 second timeout
     });
 
-    // Wait until the operation completes
-    const result = await poller.pollUntilDone();
-    
-    // Safely destructure with defaults
-    const {
-      content = "",
-      pages = [],
-      languages = [],
-      styles = [],
-      tables = [],
-      keyValuePairs = [],
-      entities = [],
-    } = result;
+    // Main processing function
+    const processingPromise = async () => {
+      // Parse the form data
+      const formData = await request.formData();
+      const file = formData.get("file");
+      const documentType = formData.get("documentType") || "tax-clearance-online";
+      
+      // Get additional form fields
+      const organizationName = formData.get("organizationName") || "";
+      const ownerName = formData.get("ownerName") || "";
+      const fein = formData.get("fein") || "";
 
-    // Validate based on document type
-    const validationResults = validateDocumentByType({
-      documentType,
-      content,
-      pages,
-      languages,
-      styles,
-      tables,
-      keyValuePairs,
-      entities,
-      formFields: {
-        organizationName,
-        ownerName,
-        fein
+      if (!file) {
+        return NextResponse.json(
+          { error: "No file provided" },
+          { status: 400 }
+        );
       }
-    });
 
-    // Prepare document info
-    const documentInfo = {
-      pageCount: pages.length,
-      wordCount: pages.reduce((sum, page) => sum + (page.words ? page.words.length : 0), 0),
-      languageInfo: languages.map(lang => ({
-        languageCode: lang.languageCode,
-        confidence: lang.confidence
-      })),
-      containsHandwriting: styles.some(style => style.isHandwritten),
-      documentType,
-      detectedOrganizationName: validationResults.detectedOrganizationName || null
+      // Convert the file into a Buffer
+      const buffer = Buffer.from(await file.arrayBuffer());
+      // Determine the file's content type
+      const contentType = file.type || "application/octet-stream";
+
+      // Create the Document Intelligence Client
+      const client = new DocumentAnalysisClient(endpoint, new AzureKeyCredential(key));
+
+      // Analyze the document - using prebuilt-document for more advanced structure analysis
+      const poller = await client.beginAnalyzeDocument("prebuilt-document", buffer, {
+        contentType, 
+      });
+
+      // Wait until the operation completes
+      const result = await poller.pollUntilDone();
+      
+      // Safely destructure with defaults
+      const {
+        content = "",
+        pages = [],
+        languages = [],
+        styles = [],
+        tables = [],
+        keyValuePairs = [],
+        entities = [],
+      } = result;
+
+      // Pre-process lowercase content to avoid repeated toLowerCase() calls
+      const contentLower = content.toLowerCase();
+
+      // Validate based on document type
+      const validationResults = validateDocumentByType({
+        documentType,
+        content,
+        contentLower,
+        pages,
+        languages,
+        styles,
+        tables,
+        keyValuePairs,
+        entities,
+        formFields: {
+          organizationName,
+          ownerName,
+          fein
+        }
+      });
+
+      // Prepare document info
+      const documentInfo = {
+        pageCount: pages.length,
+        wordCount: pages.reduce((sum, page) => sum + (page.words ? page.words.length : 0), 0),
+        languageInfo: languages.map(lang => ({
+          languageCode: lang.languageCode,
+          confidence: lang.confidence
+        })),
+        containsHandwriting: styles.some(style => style.isHandwritten),
+        documentType,
+        detectedOrganizationName: validationResults.detectedOrganizationName || null
+      };
+
+      return NextResponse.json({
+        success: validationResults.missingElements.length === 0,
+        missingElements: validationResults.missingElements,
+        suggestedActions: validationResults.suggestedActions || [],
+        documentInfo
+      });
     };
 
-    return NextResponse.json({
-      success: validationResults.missingElements.length === 0,
-      missingElements: validationResults.missingElements,
-      suggestedActions: validationResults.suggestedActions || [],
-      documentInfo
-    });
+    // Race between processing and timeout
+    return await Promise.race([processingPromise(), timeoutPromise]);
 
   } catch (error) {
     console.error("Error in document validation:", error);
+    if (error.message === "Processing timeout") {
+      return NextResponse.json(
+        { error: "Request timed out. Document processing took too long." },
+        { status: 504 }
+      );
+    }
     return NextResponse.json(
       { error: error.message || "Failed to validate document" },
       { status: 500 }
@@ -106,8 +127,7 @@ export async function POST(request) {
 }
 
 function validateDocumentByType(options) {
-  const { documentType, content, pages, languages, styles, tables, keyValuePairs, entities, formFields } = options;
-  const contentLower = content.toLowerCase();
+  const { documentType, content, contentLower, pages, languages, styles, tables, keyValuePairs, entities, formFields } = options;
   
   switch(documentType) {
     case 'tax-clearance-online':
@@ -135,7 +155,7 @@ function validateDocumentByType(options) {
     case 'bylaws':
       return validateBylaws(content, contentLower, pages, keyValuePairs);
     case 'cert-authority':
-      return validateCertificateOfAuthority(content, contentLower, pages, keyValuePairs);
+      return validateCertificateOfAuthority(content, contentLower, pages, keyValuePairs, formFields);
     case 'cert-authority-auto':
       return validateCertificateOfAuthorityAutomatic(content, contentLower, pages, keyValuePairs);
     default:
@@ -210,6 +230,17 @@ function validateTaxClearanceOnline(content, contentLower, pages, keyValuePairs,
   // Check for required keywords
   if (!contentLower.includes("clearance certificate")) {
     missingElements.push("Required text: 'Clearance Certificate'");
+  }
+  
+  // Check for Serial#
+  const hasSerial = contentLower.includes("serial#") || 
+                   contentLower.includes("serial #") ||
+                   contentLower.includes("serial number") ||
+                   content.match(/serial[\s#]*:?\s*\d+/i);
+                   
+  if (!hasSerial) {
+    missingElements.push("Required element: Serial Number");
+    suggestedActions.push("Verify this is an online-generated certificate with a Serial Number");
   }
   
   // Check for State of New Jersey
@@ -320,7 +351,6 @@ function validateTaxClearanceOnline(content, contentLower, pages, keyValuePairs,
 
 // Validation for Tax Clearance Certificate (Manual)
 function validateTaxClearanceManual(content, contentLower, pages, keyValuePairs, formFields) {
-
   const missingElements = [];
   const suggestedActions = [];
   let detectedOrganizationName = null;
@@ -390,8 +420,8 @@ function validateTaxClearanceManual(content, contentLower, pages, keyValuePairs,
     missingElements.push("Required text: 'State of New Jersey'");
   }
 
-  // Check for BATC Manual indication
-  if (!contentLower.includes("batc manual")) {
+  // Check for BATC Manual indication - this is a REQUIRED check for manual certificates
+  if (!contentLower.includes("batc")) {
     missingElements.push("Required text: 'BATC Manual'");
     suggestedActions.push("Verify this is a manually generated tax clearance certificate");
   }
@@ -1354,19 +1384,16 @@ function validateCertificateOfAuthorityAutomatic(content, contentLower, pages, k
 
 // Helper function to check if a date in the document is within the last 6 months
 function checkDateWithinSixMonths(content) {
-  // Match numeric date formats like MM/DD/YYYY or DD/MM/YYYY
-  const numericDateRegex = /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/g;
-  const numericDateMatches = [...content.matchAll(numericDateRegex)];
-
-  // Match written date formats like "January 15, 2023" or "15 January 2023"
-  const monthNames = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
-  const monthPattern = monthNames.join('|');
-  const writtenDateRegex = new RegExp(`(${monthPattern})\\s+(\\d{1,2})(?:st|nd|rd|th)?[,\\s]+?(\\d{4})|(\\d{1,2})(?:st|nd|rd|th)?\\s+(${monthPattern})[,\\s]+?(\\d{4})`, 'gi');
-  const writtenDateMatches = [...content.matchAll(writtenDateRegex)];
+  // Early exit if content is too short
+  if (!content || content.length < 10) return false;
 
   const now = new Date();
   const sixMonthsAgo = new Date();
   sixMonthsAgo.setMonth(now.getMonth() - 6);
+  
+  // Match numeric date formats like MM/DD/YYYY or DD/MM/YYYY - limit the number of matches to improve performance
+  const numericDateRegex = /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{4})/g;
+  const numericDateMatches = Array.from(content.matchAll(numericDateRegex)).slice(0, 10); // Limit to first 10 matches
 
   // Check numeric dates
   for (const match of numericDateMatches) {
@@ -1390,6 +1417,12 @@ function checkDateWithinSixMonths(content) {
       return true;
     }
   }
+
+  // Match written date formats like "January 15, 2023" or "15 January 2023"
+  const monthNames = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+  const monthPattern = monthNames.join('|');
+  const writtenDateRegex = new RegExp(`(${monthPattern})\\s+(\\d{1,2})(?:st|nd|rd|th)?[,\\s]+?(\\d{4})|(\\d{1,2})(?:st|nd|rd|th)?\\s+(${monthPattern})[,\\s]+?(\\d{4})`, 'gi');
+  const writtenDateMatches = Array.from(content.matchAll(writtenDateRegex)).slice(0, 10); // Limit to first 10 matches
 
   // Check written dates
   for (const match of writtenDateMatches) {
@@ -1419,25 +1452,26 @@ function checkDateWithinSixMonths(content) {
         return true;
       }
     }
+  }
 
-      // Format: "13th day of May, 2023"
-    const ordinalDateRegex = /(\d{1,2})(st|nd|rd|th)? day of (\w+),\s*(\d{4})/gi;
-    let ordinalMatch;
-    while ((ordinalMatch = ordinalDateRegex.exec(content)) !== null) {
-      let day = parseInt(ordinalMatch[1]);
-      let month = monthNames.indexOf(ordinalMatch[3].toLowerCase());
-      let year = parseInt(ordinalMatch[4]);
+  // Format: "13th day of May, 2023"
+  const ordinalDateRegex = /(\d{1,2})(st|nd|rd|th)? day of (\w+),\s*(\d{4})/gi;
+  const ordinalMatches = Array.from(content.matchAll(ordinalDateRegex)).slice(0, 5); // Limit to first 5 matches
+  
+  for (const ordinalMatch of ordinalMatches) {
+    let day = parseInt(ordinalMatch[1]);
+    let month = monthNames.indexOf(ordinalMatch[3].toLowerCase());
+    let year = parseInt(ordinalMatch[4]);
 
-      if (month !== -1) {
-        const date = new Date(year, month, day);
-        if (
-          date instanceof Date &&
-          !isNaN(date) &&
-          date >= sixMonthsAgo &&
-          date <= now
-        ) {
-          return true;
-        }
+    if (month !== -1) {
+      const date = new Date(year, month, day);
+      if (
+        date instanceof Date &&
+        !isNaN(date) &&
+        date >= sixMonthsAgo &&
+        date <= now
+      ) {
+        return true;
       }
     }
   }
