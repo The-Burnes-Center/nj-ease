@@ -1355,6 +1355,7 @@ function validateCertificateOfAuthority(content, contentLower, pages, keyValuePa
     detectedOrganizationName
   };
 }
+
 // Validation for Certificate of Authority - Automatic
 function validateCertificateOfAuthorityAutomatic(content, contentLower, pages, keyValuePairs) {
   const missingElements = [];
