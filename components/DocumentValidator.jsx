@@ -66,7 +66,6 @@ export default function EnhancedDocumentValidator() {
       case 'cert-good-standing-long':
       case 'cert-good-standing-short':
       case 'cert-incorporation':
-      case 'cert-authority':
         newRequiredFields.organizationName = true;
         break;
       default:
