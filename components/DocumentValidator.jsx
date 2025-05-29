@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { Upload, CheckCircle, FileWarning, AlertCircle, Download, FileText } from 'lucide-react';
+import { Upload, CheckCircle, AlertCircle, FileText } from 'lucide-react';
 
 export default function EnhancedDocumentValidator() {
   const [file, setFile] = useState(null);
