@@ -12,7 +12,6 @@ export default function EnhancedDocumentValidator() {
   const [documentType, setDocumentType] = useState('tax-clearance-online');
   const [formFields, setFormFields] = useState({
     organizationName: '',
-    ownerName: '',
     fein: ''
   });
   const [feedback, setFeedback] = useState('');
@@ -22,7 +21,6 @@ export default function EnhancedDocumentValidator() {
   const [feedbackError, setFeedbackError] = useState(null);
   const [requiredFields, setRequiredFields] = useState({
     organizationName: false,
-    ownerName: false,
     fein: false
   });
 
@@ -57,13 +55,13 @@ export default function EnhancedDocumentValidator() {
         newRequiredFields.fein = true;
         break;
       case 'operating-agreement':
-        newRequiredFields.organizationName = true;
-        break;
       case 'cert-formation':
       case 'cert-formation-independent':
       case 'cert-good-standing-long':
       case 'cert-good-standing-short':
       case 'cert-incorporation':
+      case 'cert-authority':
+      case 'cert-authority-auto':
         newRequiredFields.organizationName = true;
         break;
       default:
@@ -223,7 +221,7 @@ export default function EnhancedDocumentValidator() {
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 mb-1">FEIN (Federal Employer Identification Number)</label>
                 <input
-                  type="text"
+                  type="number"
                   name="fein"
                   value={formFields.fein}
                   onChange={handleInputChange}
