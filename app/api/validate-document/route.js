@@ -136,7 +136,7 @@ function validateDocumentByType(options) {
     case 'tax-clearance-manual':
       return validateTaxClearanceManual(content, contentLower, pages, keyValuePairs, formFields);
     case 'cert-alternative-name':
-      return validateCertificateAlternativeName(content, contentLower, pages, keyValuePairs);
+      return validateCertificateAlternativeName(content, contentLower, pages, keyValuePairs, formFields);
     case 'cert-trade-name':
       return validateCertificateOfTradeName(content, contentLower, pages, keyValuePairs);
     case 'cert-formation':
@@ -267,7 +267,6 @@ function validateTaxClearanceOnline(content, contentLower, pages, keyValuePairs,
   const applicantIdMatch = content.match(/applicant\s+id[#:]?\s*:?\s*(.*?)(?=\r|\n|$)/i);
   if (applicantIdMatch && applicantIdMatch[1]) {
     detectedId = applicantIdMatch[1].trim();
-    console.log("detectedId", detectedId);
   }
   
   // If not found yet, check key-value pairs
@@ -512,34 +511,96 @@ function validateTaxClearanceManual(content, contentLower, pages, keyValuePairs,
 }
 
 // Validation for Certificate of Alternative Name
-function validateCertificateAlternativeName(content, contentLower, pages, keyValuePairs) {
+function validateCertificateAlternativeName(content, contentLower, pages, keyValuePairs, formFields) {
   const missingElements = [];
   const suggestedActions = [];
+  let detectedOrganizationName = null;
   
-  // Check for required elements
-  if (!contentLower.includes("registration") || !contentLower.includes("alternate name")) {
+  // Check for required elements and extract organization name
+  const hasCertificateKeyword = contentLower.includes("certificate of alternate name") || contentLower.includes("certificate of renewal of alternate name");
+  
+  if (!hasCertificateKeyword) {
     missingElements.push("Required keyword: 'Certificate of Alternate Name'");
+  } else {
+    // Find the organization name that appears after the certificate keywords
+    let certIndex = -1;
+    let certKeyword = "";
+    
+    if (contentLower.includes("certificate of alternate name")) {
+      certIndex = contentLower.indexOf("certificate of alternate name");
+      certKeyword = "certificate of alternate name";
+    } else if (contentLower.includes("certificate of renewal of alternate name")) {
+      certIndex = contentLower.indexOf("certificate of renewal of alternate name");
+      certKeyword = "certificate of renewal of alternate name";
+    }
+    
+    if (certIndex !== -1) {
+      // Get the text after the certificate keyword
+      const textAfterCert = content.substring(certIndex + certKeyword.length);
+      
+      // Split into lines and find the organization name
+      const lines = textAfterCert.split('\n');
+      for (let i = 0; i < Math.min(5, lines.length); i++) {
+        const line = lines[i].trim();
+        // Skip empty lines, dates, or lines with less than 3 characters
+        if (line && line.length > 3 && !line.match(/^\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}$/)) {
+          // Skip lines that have typical headers or metadata
+          if (!line.toLowerCase().includes("state of") && 
+              !line.toLowerCase().includes("department of") &&
+              !line.toLowerCase().includes("division of") &&
+              !line.toLowerCase().includes("new jersey") &&
+              !line.toLowerCase().includes("treasury") &&
+              !line.toLowerCase().includes("revenue")) {
+            detectedOrganizationName = line;
+            // If it's all caps or has business entity indicators, it's very likely the org name
+            if ((line === line.toUpperCase() && line.length > 5) || 
+                /LLC|INC|CORP|CORPORATION|COMPANY|LP|LLP/i.test(line)) {
+              break;  // We're confident this is the org name
+            }
+          }
+        }
+      }
+    }
   }
   
-  // Check for date stamp by Dept. of Treasury
-  const hasTreasuryDateStamp = contentLower.includes("filed") && 
-                               contentLower.includes("state treasurer");
-  
-  if (!hasTreasuryDateStamp) {
-    missingElements.push("Date stamp by Department of Treasury is missing");
-    suggestedActions.push("Verify document has been properly stamped by the Department of Treasury");
+  // Check for organization name match if provided
+  if (formFields && formFields.organizationName && detectedOrganizationName) {
+    const orgNameLower = formFields.organizationName.toLowerCase().trim();
+    const detectedOrgNameLower = detectedOrganizationName.toLowerCase().trim();
+    
+    // More flexible matching that accounts for common variations
+    const isMatch = 
+      detectedOrgNameLower.includes(orgNameLower) || 
+      orgNameLower.includes(detectedOrgNameLower) ||
+      // Remove common suffixes for matching
+      detectedOrgNameLower.replace(/,?\s*(llc|inc|corp|corporation|company|lp|llp)\.?$/i, '').trim() === 
+        orgNameLower.replace(/,?\s*(llc|inc|corp|corporation|company|lp|llp)\.?$/i, '').trim();
+    
+    if (!isMatch) {
+      missingElements.push("Organization name doesn't match the one on the certificate");
+      suggestedActions.push(`Verify that the correct organization name was entered. Certificate shows: "${detectedOrganizationName}"`);
+    }
   }
-  
+
   // Check for Division of Revenue in the top center
   const hasDivisionOfRevenue = contentLower.includes("division of revenue");
   if (!hasDivisionOfRevenue) {
     missingElements.push("Required keyword: 'Division of Revenue'");
     suggestedActions.push("Verify document has been issued by the Division of Revenue");
   }
+  
+  // Check for date stamp by Dept. of Treasury
+  const hasTreasuryDateStamp = contentLower.includes("state treasurer") ||contentLower.includes("great seal") || contentLower.includes("seal at trenton");
+  
+  if (!hasTreasuryDateStamp) {
+    missingElements.push("Date stamp by Department of Treasury is missing");
+    suggestedActions.push("Verify document has been properly stamped by the Department of Treasury");
+  }
 
   return { 
     missingElements, 
-    suggestedActions 
+    suggestedActions,
+    detectedOrganizationName
   };
 }
 
@@ -575,8 +636,6 @@ function validateCertificateOfFormation(content, contentLower, pages, keyValuePa
       detectedOrganizationName = namePair.value.content;
     }
   }
-
-  console.log("detectedOrganizationName", detectedOrganizationName);
   
   // Check for organization name match if provided
   if (formFields.organizationName && detectedOrganizationName) {
@@ -723,12 +782,12 @@ function validateCertificateOfFormationIndependent(content, contentLower, pages,
   //   suggestedActions.push("Verify document shows entity identification number");
   // }
   
-  // Check for filing date
-  // const hasFilingDate = /duly filed|filed in accordance|date|filed on|filing date/i.test(content);
-  // if (!hasFilingDate) {
-  //   missingElements.push("Filing date");
-  //   suggestedActions.push("Verify document shows filing date");
-  // }
+  // Check for stamp
+  const hasFilingDate = /filed/i.test(content);
+  if (!hasFilingDate) {
+    missingElements.push("Required keyword: 'Filed'");
+    suggestedActions.push("Verify document is stamped by the Department of the Treasury");
+  }
   
   // Check for state seal
   // const hasStateSeal = /official seal|seal of the state|great seal/i.test(content) || 
@@ -1042,52 +1101,54 @@ function validateCertificateOfIncorporation(content, contentLower, pages, keyVal
   }
   
   // 2. Check for NJ Department of Treasury
-  const hasTreasury = contentLower.includes("new jersey department of the treasury") || 
-                     contentLower.includes("nj department of the treasury") ||
-                     contentLower.includes("department of the treasury");
+  // const hasTreasury = contentLower.includes("new jersey department of the treasury") || 
+  //                    contentLower.includes("nj department of the treasury") ||
+  //                    contentLower.includes("department of the treasury");
   
-  if (!hasTreasury) {
-    missingElements.push("Required keyword: 'New Jersey Department of the Treasury'");
-    suggestedActions.push("Verify certificate is issued by the NJ Department of Treasury");
-  }
+  // if (!hasTreasury) {
+  //   missingElements.push("Required keyword: 'New Jersey Department of the Treasury'");
+  //   suggestedActions.push("Verify certificate is issued by the NJ Department of Treasury");
+  // }
   
   // 3. Check for Division of Revenue & Enterprise Services
-  const hasDivision = contentLower.includes("division of revenue and enterprise services") || 
-                     contentLower.includes("division of revenue & enterprise services");
+  // const hasDivision = contentLower.includes("division of revenue and enterprise services") || 
+  //                    contentLower.includes("division of revenue & enterprise services");
   
-  if (!hasDivision) {
-    missingElements.push("Required keyword: 'Division of Revenue & Enterprise Services'");
-    suggestedActions.push("Verify certificate mentions Division of Revenue & Enterprise Services");
-  }
+  // if (!hasDivision) {
+  //   missingElements.push("Required keyword: 'Division of Revenue & Enterprise Services'");
+  //   suggestedActions.push("Verify certificate mentions Division of Revenue & Enterprise Services");
+  // }
   
   // 4. Check for Board of Directors listing
   const hasDirectors = contentLower.includes("board of directors") || 
-                      contentLower.includes("directors:");
+                      contentLower.includes("directors") || 
+                      contentLower.includes("incorporators") ||
+                      contentLower.includes("trustees");
   
   if (!hasDirectors) {
-    missingElements.push("Board of Directors listing is missing");
+    missingElements.push("Board of Directors section is missing");
     suggestedActions.push("Verify the certificate lists the Board of Directors");
   }
   
   // 5. Check for Incorporators section
-  const hasIncorporators = contentLower.includes("incorporators:") || 
-                          contentLower.includes("incorporator");
+  // const hasIncorporators = contentLower.includes("incorporators:") || 
+  //                         contentLower.includes("incorporator");
   
-  if (!hasIncorporators) {
-    missingElements.push("Incorporators section is missing");
-    suggestedActions.push("Verify the certificate lists the Incorporators");
-  }
+  // if (!hasIncorporators) {
+  //   missingElements.push("Incorporators section is missing");
+  //   suggestedActions.push("Verify the certificate lists the Incorporators");
+  // }
   
-  // 6. Check for state seal
-  const hasStateSeal = contentLower.includes("official seal") || 
-                      contentLower.includes("seal at trenton") ||
-                      contentLower.includes("testimony whereof") ||
-                      (contentLower.includes("seal") && contentLower.includes("affixed"));
+  // // 6. Check for state seal
+  // const hasStateSeal = contentLower.includes("official seal") || 
+  //                     contentLower.includes("seal at trenton") ||
+  //                     contentLower.includes("testimony whereof") ||
+  //                     (contentLower.includes("seal") && contentLower.includes("affixed"));
   
-  if (!hasStateSeal) {
-    missingElements.push("State seal is missing");
-    suggestedActions.push("Verify the certificate has the State seal affixed");
-  }
+  // if (!hasStateSeal) {
+  //   missingElements.push("State seal is missing");
+  //   suggestedActions.push("Verify the certificate has the State seal affixed");
+  // }
   
   return { 
     missingElements, 
@@ -1110,14 +1171,14 @@ function validateIRSDeterminationLetter(content, contentLower, pages, keyValuePa
     suggestedActions.push("Verify the letter is on IRS letterhead showing 'Internal Revenue Service'");
   }
   
-  // Check for Employer Identification Number (EIN/FEIN)
-  const hasEIN = contentLower.includes("employer identification number") || 
-                contentLower.match(/ein\s*:/i);
+  // // Check for Employer Identification Number (EIN/FEIN)
+  // const hasEIN = contentLower.includes("employer identification number") || 
+  //               contentLower.match(/ein\s*:/i);
   
-  if (!hasEIN) {
-    missingElements.push("Employer Identification Number (EIN) is missing");
-    suggestedActions.push("Verify the letter includes an Employer Identification Number");
-  }
+  // if (!hasEIN) {
+  //   missingElements.push("Employer Identification Number (EIN) is missing");
+  //   suggestedActions.push("Verify the letter includes an Employer Identification Number");
+  // }
   
   // Check for Contact Person information
   // const hasContactPerson = contentLower.includes("person to contact") || 
@@ -1166,71 +1227,19 @@ function validateBylaws(content, contentLower, pages, keyValuePairs) {
   const suggestedActions = [];
   
   // Check for required elements
-  if (!contentLower.includes("bylaws") && !contentLower.includes("by-laws")) {
-    missingElements.push("Required text: 'Bylaws'");
+  if (!contentLower.includes("bylaws") && !contentLower.includes("by-laws") && !contentLower.includes("by laws")) {
+    missingElements.push("Required keyword: 'Bylaws'");
   }
   
-  // Check for New Jersey-specific language
-  const hasNJReference = contentLower.includes("new jersey") ||
-                        contentLower.includes("new jersey business corporation act") ||
-                        contentLower.includes("department of the treasury");
-  
-  if (!hasNJReference) {
-    missingElements.push("New Jersey state references are missing");
-    suggestedActions.push("Verify the bylaws reference New Jersey state law");
-  }
-  
-  // Check for key sections typically found in bylaws
-  const requiredSections = [
-    { name: "Board of Directors", regex: /board of directors|directors/i },
-    { name: "Meetings section", regex: /meeting[s]?|annual meeting/i },
-    { name: "Amendments section", regex: /amendment[s]?|amend/i },
-    { name: "Corporate formation", regex: /formation|organization|incorporate/i },
-    { name: "Shareholders", regex: /shareholder[s]?|stockholder[s]?/i },
-    { name: "Capital/Stock", regex: /capital|stock|shares/i },
-    { name: "Books and Records", regex: /books and records|corporate records/i }
-  ];
-  
-  for (const section of requiredSections) {
-    if (!section.regex.test(content)) {
-      missingElements.push(`${section.name}`);
-      suggestedActions.push(`Verify bylaws contain a ${section.name.toLowerCase()} section`);
-    }
-  }
-  
-  // Check for specific corporate compliance elements
-  const complianceElements = [
-    { name: "Director duties", regex: /director.{1,30}(duties|responsibilities|liability)/i },
-    { name: "Voting procedures", regex: /vot(e|ing)/i },
-    { name: "Corporate seal", regex: /corporate seal/i }
-  ];
-  
-  for (const element of complianceElements) {
-    if (!element.regex.test(content)) {
-      missingElements.push(`${element.name}`);
-      suggestedActions.push(`Verify bylaws address ${element.name.toLowerCase()}`);
-    }
-  }
-  
-  // Check for page numbering
-  const hasPageNumbering = /page\s+\d+\s+of\s+\d+/i.test(content);
-  
-  if (!hasPageNumbering) {
-    missingElements.push("Page numbering");
-    suggestedActions.push("Verify bylaws include proper page numbering (e.g., 'Page X of Y')");
-  }
-  
-  // Check for statutory references
-  const hasStatutoryReferences = content.match(/\d+a:\d+-\d+/i) || // NJ format 14A:X-X
-                                content.match(/section\s+\d+a:/i);
-  
-  if (!hasStatutoryReferences) {
-    missingElements.push("New Jersey statutory references");
-    suggestedActions.push("Verify bylaws reference specific sections of the New Jersey Business Corporation Act");
+  // Check for presence of any date
+  const hasDate = checkForDatePresence(content);
+  if (!hasDate) {
+    missingElements.push("Document must contain a date");
+    suggestedActions.push("Verify that the by-laws document includes a date");
   }
   
   return { 
-    missingElements, 
+    missingElements,
     suggestedActions
   };
 }
@@ -1240,8 +1249,6 @@ function validateCertificateOfAuthority(content, contentLower, pages, keyValuePa
   const missingElements = [];
   const suggestedActions = [];
   let detectedOrganizationName = null;
-
-  console.log("contentLower", contentLower);
   
   // Check for required elements
   if (!contentLower.includes("certificate of authority")) {
@@ -1266,7 +1273,7 @@ function validateCertificateOfAuthority(content, contentLower, pages, keyValuePa
   }
   
   // Detect organization name
-  const authorizationLine = "this authorization is good only for the named person at the location specified herein this authorization is null and void if any change of ownership or address is effected.";
+  const authorizationLine = "this authorization is good only for the named person at the location specified herein this authorization is null and void if any change of ownership or address is effected." || "address.";
   const authorizationIndex = contentLower.indexOf(authorizationLine);
   
   if (authorizationIndex !== -1) {
@@ -1408,6 +1415,29 @@ function validateCertificateOfAuthorityAutomatic(content, contentLower, pages, k
   };
 }
 
+// Validation for Certificate of Trade Name
+function validateCertificateOfTradeName(content, contentLower, pages, keyValuePairs) {
+  const missingElements = [];
+  const suggestedActions = [];
+  
+  // Check for required elements
+  if (!contentLower.includes("certificate of trade name")) {
+    missingElements.push("Required keyword: 'Certificate of Trade Name'");
+  }
+  
+  // Check for N.J.S.A. statute reference
+  // const hasNJSAStatute = content.includes("N.J.S.A.");
+  // if (!hasNJSAStatute) {
+  //   missingElements.push("N.J.S.A. statute reference");
+  //   suggestedActions.push("Verify document is the standard Certificate of Trade Name showing N.J.S.A. statute");
+  // }
+  
+  return { 
+    missingElements, 
+    suggestedActions 
+  };
+}
+
 // Helper function to check if a date in the document is within the last 6 months
 function checkDateWithinSixMonths(content) {
   // Early exit if content is too short
@@ -1505,25 +1535,57 @@ function checkDateWithinSixMonths(content) {
   return false;
 }
 
-// Validation for Certificate of Trade Name
-function validateCertificateOfTradeName(content, contentLower, pages, keyValuePairs) {
-  const missingElements = [];
-  const suggestedActions = [];
+// Helper function to check if any date is present in the document
+function checkForDatePresence(content) {
+  // Early exit if content is too short
+  if (!content || content.length < 10) return false;
   
-  // Check for required elements
-  if (!contentLower.includes("certificate of trade name")) {
-    missingElements.push("Required keyword: 'Certificate of Trade Name'");
+  // Match numeric date formats like MM/DD/YYYY, DD/MM/YYYY, MM-DD-YYYY, etc.
+  const numericDateRegex = /(\d{1,2})[\/\-\.](\d{1,2})[\/\-\.](\d{2,4})/g;
+  const numericDateMatches = content.match(numericDateRegex);
+  
+  if (numericDateMatches && numericDateMatches.length > 0) {
+    // Validate that at least one match looks like a real date
+    for (const match of numericDateMatches.slice(0, 10)) { // Check first 10 matches for performance
+      const parts = match.split(/[\/\-\.]/);
+      const num1 = parseInt(parts[0]);
+      const num2 = parseInt(parts[1]);
+      const year = parseInt(parts[2]);
+      
+      // Basic validation: reasonable year and month/day ranges
+      if (year >= 1900 && year <= 2100 && 
+          num1 >= 1 && num1 <= 31 && 
+          num2 >= 1 && num2 <= 31) {
+        return true;
+      }
+    }
   }
   
-  // Check for N.J.S.A. statute reference
-  // const hasNJSAStatute = content.includes("N.J.S.A.");
-  // if (!hasNJSAStatute) {
-  //   missingElements.push("N.J.S.A. statute reference");
-  //   suggestedActions.push("Verify document is the standard Certificate of Trade Name showing N.J.S.A. statute");
-  // }
+  // Match written date formats like "January 15, 2023", "15 January 2023", etc.
+  const monthNames = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december'];
+  const monthPattern = monthNames.join('|');
+  const writtenDateRegex = new RegExp(`(${monthPattern})\\s+(\\d{1,2})(?:st|nd|rd|th)?[,\\s]*?(\\d{4})|(\\d{1,2})(?:st|nd|rd|th)?\\s+(${monthPattern})[,\\s]*?(\\d{4})`, 'gi');
+  const writtenDateMatches = content.match(writtenDateRegex);
   
-  return { 
-    missingElements, 
-    suggestedActions 
-  };
+  if (writtenDateMatches && writtenDateMatches.length > 0) {
+    return true;
+  }
+  
+  // Match ordinal date formats like "13th day of May, 2023"
+  const ordinalDateRegex = /(\d{1,2})(st|nd|rd|th)?\s+day\s+of\s+(\w+)[,\s]*(\d{4})/gi;
+  const ordinalMatches = content.match(ordinalDateRegex);
+  
+  if (ordinalMatches && ordinalMatches.length > 0) {
+    return true;
+  }
+  
+  // Match year-only formats like "2023" or "©2023" (but be more specific to avoid false positives)
+  const yearOnlyRegex = /(?:©\s*|copyright\s*|adopted\s*|effective\s*|revised\s*|amended\s*|dated\s*|year\s*)(\d{4})/gi;
+  const yearMatches = content.match(yearOnlyRegex);
+  
+  if (yearMatches && yearMatches.length > 0) {
+    return true;
+  }
+  
+  return false;
 }

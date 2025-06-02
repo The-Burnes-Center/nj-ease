@@ -62,6 +62,7 @@ export default function EnhancedDocumentValidator() {
       case 'cert-incorporation':
       case 'cert-authority':
       case 'cert-authority-auto':
+      case 'cert-alternative-name':
         newRequiredFields.organizationName = true;
         break;
       default:
