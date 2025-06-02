@@ -814,12 +814,12 @@ function validateCertificateOfFormationIndependent(content, contentLower, pages,
   }
   
   // Check for verification info
-  const hasVerificationInfo = /verify this certificate|verification|certification/i.test(content);
+  // const hasVerificationInfo = /verify this certificate|verification|certification/i.test(content);
   
-  if (!hasVerificationInfo) {
-    missingElements.push("Certificate verification information is missing");
-    suggestedActions.push("Verify document contains certificate verification information");
-  }
+  // if (!hasVerificationInfo) {
+  //   missingElements.push("Certificate verification information is missing");
+  //   suggestedActions.push("Verify document contains certificate verification information");
+  // }
   
   // Check for key sections that should be in a certificate of formation
   // const requiredSections = [
