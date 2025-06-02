@@ -517,7 +517,7 @@ function validateCertificateAlternativeName(content, contentLower, pages, keyVal
   let detectedOrganizationName = null;
   
   // Check for required elements and extract organization name
-  const hasCertificateKeyword = contentLower.includes("certificate of alternate name") || contentLower.includes("certificate of renewal of alternate name");
+  const hasCertificateKeyword = contentLower.includes("certificate of alternate name") || contentLower.includes("certificate of renewal of alternate name") || contentLower.includes("registration of alternate name");
   
   if (!hasCertificateKeyword) {
     missingElements.push("Required keyword: 'Certificate of Alternate Name'");
@@ -532,6 +532,9 @@ function validateCertificateAlternativeName(content, contentLower, pages, keyVal
     } else if (contentLower.includes("certificate of renewal of alternate name")) {
       certIndex = contentLower.indexOf("certificate of renewal of alternate name");
       certKeyword = "certificate of renewal of alternate name";
+    } else if (contentLower.includes("name of corporation/business:")) {
+      certIndex = contentLower.indexOf("name of corporation/business:");
+      certKeyword = "name of corporation/business:";
     }
     
     if (certIndex !== -1) {
