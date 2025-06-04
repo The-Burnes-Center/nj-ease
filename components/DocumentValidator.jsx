@@ -35,8 +35,7 @@ export default function EnhancedDocumentValidator() {
     { value: 'cert-incorporation', label: 'Certificate of Incorporation' },
     { value: 'irs-determination', label: 'IRS Determination Letter' },
     { value: 'bylaws', label: 'By-laws' },
-    { value: 'cert-authority', label: 'Certificate of Authority' },
-    { value: 'cert-authority-auto', label: 'Certificate of Authority - Automatic' }
+    { value: 'cert-authority', label: 'Certificate of Authority' }
   ];
 
   // Set required fields based on document type

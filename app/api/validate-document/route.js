@@ -153,8 +153,6 @@ function validateDocumentByType(options) {
       return validateBylaws(content, contentLower, pages, keyValuePairs);
     case 'cert-authority':
       return validateCertificateOfAuthority(content, contentLower, pages, keyValuePairs, formFields);
-    case 'cert-authority-auto':
-      return validateCertificateOfAuthorityAutomatic(content, contentLower, pages, keyValuePairs, formFields);
     default:
       return { 
         missingElements: ["Unknown document type"],
@@ -1131,97 +1129,6 @@ function validateCertificateOfAuthority(content, contentLower, pages, keyValuePa
       missingElements.push("Organization name doesn't match the one on the certificate");
       suggestedActions.push(`Verify that the correct organization name was entered. Certificate shows: "${detectedOrganizationName}"`);
     }
-  }
-  
-  return { 
-    missingElements, 
-    suggestedActions,
-    detectedOrganizationName
-  };
-}
-
-// Validation for Certificate of Authority - Automatic
-function validateCertificateOfAuthorityAutomatic(content, contentLower, pages, keyValuePairs, formFields) {
-  const missingElements = [];
-  const suggestedActions = [];
-  let detectedOrganizationName = null;
-  
-  // Check for required elements
-  if (!contentLower.includes("certificate of authority")) {
-    missingElements.push("Required keyword: 'Certificate of Authority'");
-  } else {
-    // Find the organization name using multiple methods
-    
-    // Method 1: Look for the organization name right after "Certificate of Authority"
-    const certAuthIndex = contentLower.indexOf("certificate of authority");
-    if (certAuthIndex !== -1) {
-      // Get the text after "Certificate of Authority"
-      const textAfterCertAuth = content.substring(certAuthIndex + "certificate of authority".length);
-      
-      // Split into lines and find the organization name
-      const lines = textAfterCertAuth.split('\n');
-      for (let i = 0; i < Math.min(5, lines.length); i++) {
-        const line = lines[i].trim();
-        // Skip empty lines, dates, or lines with less than 3 characters
-        if (line && line.length > 3 && !line.match(/^\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}$/)) {
-          // Skip lines that have typical headers or metadata
-          if (!line.toLowerCase().includes("state of") && 
-              !line.toLowerCase().includes("department of") &&
-              !line.toLowerCase().includes("this is to certify") &&
-              !line.toLowerCase().includes("hereby certifies")) {
-            detectedOrganizationName = line;
-            // If it's all caps or has LLC/INC, it's very likely the org name
-            if ((line === line.toUpperCase() && line.length > 5) || 
-                /LLC|INC|CORP|CORPORATION|COMPANY|LP|LLP/i.test(line)) {
-              break;  // We're confident this is the org name
-            }
-          }
-        }
-      }
-    }
-    
-    // Method 2: If still no org name, try key-value pairs
-    if (!detectedOrganizationName) {
-      const orgNamePair = keyValuePairs.find(pair => 
-        pair.key && pair.key.content && 
-        (pair.key.content.toLowerCase().includes('name') ||
-         pair.key.content.toLowerCase().includes('entity'))
-      );
-      
-      if (orgNamePair && orgNamePair.value) {
-        detectedOrganizationName = orgNamePair.value.content;
-      }
-    }
-    
-    // Check for organization name match if provided
-    if (formFields && formFields.organizationName && detectedOrganizationName) {
-      const orgNameLower = formFields.organizationName.toLowerCase().trim();
-      const detectedOrgNameLower = detectedOrganizationName.toLowerCase().trim();
-      
-      // More flexible matching that accounts for common variations
-      const isMatch = 
-        detectedOrgNameLower.includes(orgNameLower) || 
-        orgNameLower.includes(detectedOrgNameLower) ||
-        // Remove common suffixes for matching
-        detectedOrgNameLower.replace(/,?\s*(llc|inc|corp|corporation|company|lp|llp)\.?$/i, '').trim() === 
-          orgNameLower.replace(/,?\s*(llc|inc|corp|corporation|company|lp|llp)\.?$/i, '').trim();
-      
-      if (!isMatch) {
-        missingElements.push("Organization name doesn't match the one on the certificate");
-        suggestedActions.push(`Verify that the correct organization name was entered. Certificate shows: "${detectedOrganizationName}"`);
-      }
-    }
-  }
-  
-  // Check for state seal
-  const hasStateSeal = contentLower.includes("official seal") || 
-                      contentLower.includes("seal at trenton") ||
-                      contentLower.includes("testimony whereof") ||
-                      (contentLower.includes("seal") && contentLower.includes("affixed"));
-  
-  if (!hasStateSeal) {
-    missingElements.push("State seal is missing");
-    suggestedActions.push("Verify the certificate has the State seal affixed");
   }
   
   return { 
