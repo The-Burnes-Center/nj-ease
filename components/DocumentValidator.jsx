@@ -31,8 +31,6 @@ export default function EnhancedDocumentValidator() {
     { value: 'cert-trade-name', label: 'Certificate of Trade Name' },
     { value: 'cert-formation', label: 'Certificate of Formation' },
     { value: 'cert-formation-independent', label: 'Certificate of Formation - Independent' },
-    { value: 'cert-good-standing-long', label: 'Certificate of Good Standing (Long Form)' },
-    { value: 'cert-good-standing-short', label: 'Certificate of Good Standing (Short Form)' },
     { value: 'operating-agreement', label: 'Operating Agreement' },
     { value: 'cert-incorporation', label: 'Certificate of Incorporation' },
     { value: 'irs-determination', label: 'IRS Determination Letter' },

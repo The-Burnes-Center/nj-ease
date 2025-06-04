@@ -143,10 +143,6 @@ function validateDocumentByType(options) {
       return validateCertificateOfFormation(content, contentLower, pages, keyValuePairs, formFields);
     case 'cert-formation-independent':
       return validateCertificateOfFormationIndependent(content, contentLower, pages, keyValuePairs, formFields);
-    case 'cert-good-standing-long':
-      return validateCertificateOfGoodStandingLong(content, contentLower, pages, keyValuePairs, formFields);
-    case 'cert-good-standing-short':
-      return validateCertificateOfGoodStandingShort(content, contentLower, pages, keyValuePairs, formFields);
     case 'operating-agreement':
       return validateOperatingAgreement(content, contentLower, pages, keyValuePairs, formFields);
     case 'cert-incorporation':
@@ -775,8 +771,6 @@ function validateCertificateOfFormationIndependent(content, contentLower, pages,
   if (!contentLower.includes("certificate of formation")) {
     missingElements.push("Required keyword: 'Certificate of Formation'");
   }
-
-  // Check for stamp - NOT HERE YET
   
   // Check for entity ID/identification number
   // const hasEntityID = /identification number|entity id|entity number|business id number|filed number/i.test(content);
@@ -833,187 +827,6 @@ function validateCertificateOfFormationIndependent(content, contentLower, pages,
   //     suggestedActions.push(`Verify document contains ${section.name.toLowerCase()} information`);
   //   }
   // }
-  
-  return { 
-    missingElements, 
-    suggestedActions,
-    detectedOrganizationName
-  };
-}
-
-// Validation for Certificate of Good Standing (Long Form)
-function validateCertificateOfGoodStandingLong(content, contentLower, pages, keyValuePairs, formFields) {
-  const missingElements = [];
-  const suggestedActions = [];
-  let detectedOrganizationName = null;
-  
-  // Extract organization name - look for the line after "LONG FORM STANDING WITH OFFICERS AND DIRECTORS"
-  const lines = content.split('\n');
-  const longFormIndex = lines.findIndex(line => 
-    line.includes("LONG FORM STANDING WITH OFFICERS AND DIRECTORS") || 
-    line.includes("Long Form Standing with Officers and Directors")
-  );
-  
-  // If we found the header, organization name should be the next non-empty line
-  if (longFormIndex !== -1 && longFormIndex + 1 < lines.length) {
-    for (let i = longFormIndex + 1; i < lines.length; i++) {
-      const line = lines[i].trim();
-      if (line.length > 3) {
-        detectedOrganizationName = line;
-        break;
-      }
-    }
-  }
-  
-  // Check for organization name match if provided
-  if (formFields.organizationName && detectedOrganizationName) {
-    const orgNameLower = formFields.organizationName.toLowerCase().trim();
-    const detectedOrgNameLower = detectedOrganizationName.toLowerCase().trim();
-    
-    if (!detectedOrgNameLower.includes(orgNameLower) && !orgNameLower.includes(detectedOrgNameLower)) {
-      missingElements.push("Organization name doesn't match the one on the certificate");
-      suggestedActions.push("Verify that the correct organization name was entered");
-    }
-  }
-  
-  // Rest of validation checks remain the same
-  const hasLongFormTitle = contentLower.includes("long form standing") || 
-                          contentLower.includes("long form certificate") ||
-                          contentLower.includes("with officers and directors");
-  
-  if (!hasLongFormTitle) {
-    missingElements.push("Required keyword: 'Long Form Standing declaration'");
-    suggestedActions.push("Verify this is a Long Form Certificate of Good Standing with Officers and Directors");
-  }
-  
-  const hasGoodStanding = contentLower.includes("good standing") && 
-                          contentLower.includes("active");
-  
-  if (!hasGoodStanding) {
-    missingElements.push("Active and good standing status is missing");
-    suggestedActions.push("Verify entity is active and in good standing with the State of NJ");
-  }
-  
-  const hasTreasury = contentLower.includes("department of the treasury");
-  
-  if (!hasTreasury) {
-    missingElements.push("Required keyword: 'Department of the Treasury'");
-    suggestedActions.push("Verify certificate is issued by NJ Department of Treasury");
-  }
-  
-  const hasDivision = contentLower.includes("division of revenue & enterprise services") || 
-                     contentLower.includes("division of revenue and enterprise services");
-  
-  if (!hasDivision) {
-    missingElements.push("Required keyword: 'Division of Revenue & Enterprise Services'");
-    suggestedActions.push("Verify certificate mentions Division of Revenue & Enterprise Services");
-  }
-  
-  const hasOfficersDirectors = contentLower.includes("officers") && 
-                              contentLower.includes("directors");
-                              
-  if (!hasOfficersDirectors) {
-    missingElements.push("Officers/Directors information is missing");
-    suggestedActions.push("Verify the certificate includes information about officers and directors");
-  }
-  
-  const hasRegisteredInfo = contentLower.includes("registered agent") || 
-                           contentLower.includes("registered office");
-  
-  if (!hasRegisteredInfo) {
-    missingElements.push("Registered agent/office information is missing");
-    suggestedActions.push("Verify the certificate includes registered agent and office information");
-  }
-  
-  const hasStateSeal = contentLower.includes("official seal") || 
-                      contentLower.includes("seal at trenton") ||
-                      contentLower.includes("great seal") || 
-                      contentLower.includes("testimony whereof");
-  
-  if (!hasStateSeal) {
-    missingElements.push("State seal is missing");
-    suggestedActions.push("Verify the certificate has the State seal affixed");
-  }
-  
-  const hasTreasurerSignature = contentLower.includes("state treasurer") || 
-                               contentLower.includes("acting state treasurer") ||
-                               contentLower.includes("treasurer of the state");
-  
-  if (!hasTreasurerSignature) {
-    missingElements.push("State Treasurer signature is missing");
-    suggestedActions.push("Verify the certificate is signed by the State Treasurer");
-  }
-  
-  const hasCertificateNumber = content.match(/certificate\s+number|cert\.\s*no\./i);
-  
-  if (!hasCertificateNumber) {
-    missingElements.push("Certificate number is missing");
-    suggestedActions.push("Verify the certificate has a certificate number");
-  }
-  
-  const hasVerificationURL = contentLower.includes("verify this certificate") || 
-                            contentLower.includes("http") ||
-                            contentLower.includes("www");
-  
-  if (!hasVerificationURL) {
-    missingElements.push("Certificate verification information is missing");
-    suggestedActions.push("Verify the certificate includes verification information");
-  }
-  
-  return { 
-    missingElements, 
-    suggestedActions,
-    detectedOrganizationName
-  };
-}
-
-// Validation for Certificate of Good Standing (Short Form)
-function validateCertificateOfGoodStandingShort(content, contentLower, pages, keyValuePairs, formFields) {
-  const missingElements = [];
-  const suggestedActions = [];
-  let detectedOrganizationName = null;
-  
-  const hasGoodStanding = contentLower.includes("good standing") && 
-                          contentLower.includes("active");
-  
-  if (!hasGoodStanding) {
-    missingElements.push("Active and good standing status is missing");
-    suggestedActions.push("Verify entity is active and in good standing with the State of NJ");
-  }
-  
-  const hasTreasury = contentLower.includes("department of the treasury");
-  
-  if (!hasTreasury) {
-    missingElements.push("Required keyword: 'Department of the Treasury'");
-    suggestedActions.push("Verify certificate is issued by NJ Department of Treasury");
-  }
-  
-  const hasDivision = contentLower.includes("division of revenue & enterprise services") || 
-                     contentLower.includes("division of revenue and enterprise services");
-  
-  if (!hasDivision) {
-    missingElements.push("Required keyword: 'Division of Revenue & Enterprise Services'");
-    suggestedActions.push("Verify certificate mentions Division of Revenue & Enterprise Services");
-  }
-  
-  const hasStateSeal = contentLower.includes("official seal") || 
-                      contentLower.includes("seal at trenton") ||
-                      contentLower.includes("great seal") || 
-                      contentLower.includes("testimony whereof");
-  
-  if (!hasStateSeal) {
-    missingElements.push("State seal is missing");
-    suggestedActions.push("Verify the certificate has the State seal affixed");
-  }
-  
-  const hasTreasurerSignature = contentLower.includes("state treasurer") || 
-                               contentLower.includes("acting state treasurer") ||
-                               contentLower.includes("treasurer of the state");
-  
-  if (!hasTreasurerSignature) {
-    missingElements.push("State Treasurer signature is missing");
-    suggestedActions.push("Verify the certificate is signed by the State Treasurer");
-  }
   
   return { 
     missingElements, 
