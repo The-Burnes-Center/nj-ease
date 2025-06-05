@@ -407,10 +407,10 @@ export default function DocumentValidator() {
                     </div>
                   )}
                   <div className="flex-1">
-                    <h3 className={`font-bold text-xl mb-1 ${validationResult.missingElements && validationResult.missingElements.length > 0 ? 'text-red-800' : 'text-emerald-800'}`}>
+                    <h3 className={`font-bold text-lg md:text-xl mb-1 ${validationResult.missingElements && validationResult.missingElements.length > 0 ? 'text-red-800' : 'text-emerald-800'}`}>
                       {validationResult.missingElements && validationResult.missingElements.length > 0 ? 'Validation Failed' : 'Validation Passed'}
                     </h3>
-                    <p className={`text-sm ${validationResult.missingElements && validationResult.missingElements.length > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                    <p className={`text-sm md:text-base ${validationResult.missingElements && validationResult.missingElements.length > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
                       {validationResult.missingElements && validationResult.missingElements.length > 0 
                         ? 'Document validation completed with issues' 
                         : 'Document validation completed successfully'
@@ -423,13 +423,13 @@ export default function DocumentValidator() {
                   <div className="mb-6 p-5 bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-xl shadow-sm">
                     <div className="flex items-center mb-3">
                       <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-                      <p className="text-base font-semibold text-red-800">Issues Found</p>
+                      <p className="text-sm md:text-base font-semibold text-red-800">Issues Found</p>
                     </div>
                     <ul className="space-y-2 ml-2">
                       {validationResult.missingElements.map((item, index) => (
                         <li key={index} className="flex items-start">
                           <div className="w-2 h-2 rounded-full bg-red-500 mt-2 mr-3 flex-shrink-0"></div>
-                          <p className="text-sm text-red-700 leading-relaxed">{item}</p>
+                          <p className="text-sm md:text-base text-red-700 leading-relaxed">{item}</p>
                         </li>
                       ))}
                     </ul>
@@ -440,24 +440,24 @@ export default function DocumentValidator() {
                   <div className="mb-6 p-5 bg-gradient-to-br from-emerald-50 to-green-100 border border-emerald-200 rounded-xl shadow-sm">
                     <div className="flex items-center mb-3">
                       <CheckCircle className="h-5 w-5 text-emerald-600 mr-2" />
-                      <p className="text-base font-semibold text-emerald-800">Document Information</p>
+                      <p className="text-sm md:text-base font-semibold text-emerald-800">Document Information</p>
                     </div>
                     <div className="bg-white/60 p-4 rounded-lg border border-emerald-200/50">
                       <div className="grid grid-cols-1 gap-2">
                         {validationResult.documentInfo.pageCount && (
-                          <div className="flex items-center text-xs text-emerald-700">
+                          <div className="flex items-center text-xs md:text-sm text-emerald-700">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2"></div>
                             <span>Pages: <span className="font-medium">{validationResult.documentInfo.pageCount}</span></span>
                           </div>
                         )}
                         {validationResult.documentInfo.wordCount && (
-                          <div className="flex items-center text-xs text-emerald-700">
+                          <div className="flex items-center text-xs md:text-sm text-emerald-700">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2"></div>
                             <span>Words: <span className="font-medium">{validationResult.documentInfo.wordCount}</span></span>
                           </div>
                         )}
                         {validationResult.documentInfo.containsHandwriting !== undefined && (
-                          <div className="flex items-center text-xs text-emerald-700">
+                          <div className="flex items-center text-xs md:text-sm text-emerald-700">
                             <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2"></div>
                             <span>Contains handwriting: <span className="font-medium">{validationResult.documentInfo.containsHandwriting ? 'Yes' : 'No'}</span></span>
                           </div>
@@ -475,13 +475,13 @@ export default function DocumentValidator() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
                       </div>
-                      <p className="text-base font-semibold text-blue-800">Suggested Actions</p>
+                      <p className="text-sm md:text-base font-semibold text-blue-800">Suggested Actions</p>
                     </div>
                     <ul className="space-y-2 ml-2">
                       {validationResult.suggestedActions.map((action, index) => (
                         <li key={index} className="flex items-start">
                           <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 mr-3 flex-shrink-0"></div>
-                          <p className="text-sm text-blue-700 leading-relaxed">{action}</p>
+                          <p className="text-sm md:text-base text-blue-700 leading-relaxed">{action}</p>
                         </li>
                       ))}
                     </ul>
@@ -494,8 +494,8 @@ export default function DocumentValidator() {
                 <div className="bg-blue-50 rounded-full p-4 mb-4">
                   <FileText className="h-14 w-14 text-blue-500" />
                 </div>
-                <h3 className="text-gray-800 text-lg font-medium mb-2 text-center">No Document Validated</h3>
-                <p className="text-gray-600 text-center max-w-xs mb-4">
+                <h3 className="text-gray-800 text-base md:text-lg font-medium mb-2 text-center">No Document Validated</h3>
+                <p className="text-gray-600 text-center max-w-xs mb-4 text-sm md:text-base">
                   Your document validation results will appear here after you upload and validate a document.
                 </p>
               </div>
