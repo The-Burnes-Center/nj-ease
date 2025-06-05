@@ -658,32 +658,6 @@ function validateCertificateOfFormation(content, contentLower, pages, keyValuePa
     suggestedActions.push("Verify certificate is issued by the NJ Department of the Treasury");
   }
   
-  // Check for entity ID/identification number
-  // const hasEntityID = /identification number|entity id|entity number|business id number|filed number/i.test(content);
-  // if (!hasEntityID) {
-  //   missingElements.push("Entity ID/identification number");
-  //   suggestedActions.push("Verify document shows entity identification number");
-  // }
-  
-  // Check for filing date
-  // const hasFilingDate = /duly filed|filed in accordance|date|filed on|filing date/i.test(content);
-  // if (!hasFilingDate) {
-  //   missingElements.push("Filing date");
-  //   suggestedActions.push("Verify document shows filing date");
-  // }
-  
-  // Check for state seal
-  // const hasStateSeal = /official seal|seal of the state|great seal/i.test(content) || 
-  //                     contentLower.includes("seal") && 
-  //                     (contentLower.includes("affixed") || 
-  //                      contentLower.includes("testimony") || 
-  //                      contentLower.includes("whereof"));
-  
-  // if (!hasStateSeal) {
-  //   missingElements.push("NJ State Seal");
-  //   suggestedActions.push("Verify document contains the NJ state seal");
-  // }
-  
   // Check for signature of state official
   const hasSignature = /signature|signed|authorized representative/i.test(content) ||
                       /state treasurer|organizer|treasurer/i.test(content);
@@ -700,19 +674,6 @@ function validateCertificateOfFormation(content, contentLower, pages, keyValuePa
     missingElements.push("Certificate verification information is missing");
     suggestedActions.push("Verify document contains certificate verification information");
   }
-  
-  // Check for key sections that should be in a certificate of formation
-  // const requiredSections = [
-  //   { name: "Registered agent", regex: /registered\s+agent/i },
-  //   { name: "Registered office", regex: /registered\s+office/i }
-  // ];
-  
-  // for (const section of requiredSections) {
-  //   if (!section.regex.test(content)) {
-  //     missingElements.push(`${section.name} section`);
-  //     suggestedActions.push(`Verify document contains ${section.name.toLowerCase()} information`);
-  //   }
-  // }
   
   return { 
     missingElements, 
@@ -770,31 +731,12 @@ function validateCertificateOfFormationIndependent(content, contentLower, pages,
     missingElements.push("Required keyword: 'Certificate of Formation'");
   }
   
-  // Check for entity ID/identification number
-  // const hasEntityID = /identification number|entity id|entity number|business id number|filed number/i.test(content);
-  // if (!hasEntityID) {
-  //   missingElements.push("Entity ID/identification number");
-  //   suggestedActions.push("Verify document shows entity identification number");
-  // }
-  
   // Check for stamp
   const hasFilingDate = /filed/i.test(content);
   if (!hasFilingDate) {
     missingElements.push("Required keyword: 'Filed'");
     suggestedActions.push("Verify document is stamped by the Department of the Treasury");
   }
-  
-  // Check for state seal
-  // const hasStateSeal = /official seal|seal of the state|great seal/i.test(content) || 
-  //                     contentLower.includes("seal") && 
-  //                     (contentLower.includes("affixed") || 
-  //                      contentLower.includes("testimony") || 
-  //                      contentLower.includes("whereof"));
-  
-  // if (!hasStateSeal) {
-  //   missingElements.push("NJ State Seal");
-  //   suggestedActions.push("Verify document contains the NJ state seal");
-  // }
   
   // Check for signature of state official
   const hasSignature = /signature|signed|authorized representative/i.test(content) ||
@@ -804,27 +746,6 @@ function validateCertificateOfFormationIndependent(content, contentLower, pages,
     missingElements.push("Signature of authorized state official is missing");
     suggestedActions.push("Verify document has been signed by an authorized state official");
   }
-  
-  // Check for verification info
-  // const hasVerificationInfo = /verify this certificate|verification|certification/i.test(content);
-  
-  // if (!hasVerificationInfo) {
-  //   missingElements.push("Certificate verification information is missing");
-  //   suggestedActions.push("Verify document contains certificate verification information");
-  // }
-  
-  // Check for key sections that should be in a certificate of formation
-  // const requiredSections = [
-  //   { name: "Registered agent", regex: /registered\s+agent/i },
-  //   { name: "Registered office", regex: /registered\s+office/i }
-  // ];
-  
-  // for (const section of requiredSections) {
-  //   if (!section.regex.test(content)) {
-  //     missingElements.push(`${section.name} section`);
-  //     suggestedActions.push(`Verify document contains ${section.name.toLowerCase()} information`);
-  //   }
-  // }
   
   return { 
     missingElements, 
@@ -863,16 +784,6 @@ function validateOperatingAgreement(content, contentLower, pages, keyValuePairs,
     missingElements.push("Date is missing");
     suggestedActions.push("Verify the operating agreement is dated");
   }
-  
-  // Check for LLC formation language
-  // const hasFormationLanguage = contentLower.includes("certificate of formation") || 
-  //                             contentLower.includes("articles of organization") || 
-  //                             (contentLower.includes("form") && contentLower.includes("limited liability company"));
-  
-  // if (!hasFormationLanguage) {
-  //   missingElements.push("LLC formation language");
-  //   suggestedActions.push("Verify the agreement contains references to LLC formation documents");
-  // }
   
   // Check for business purpose section
   const hasBusinessPurpose = contentLower.includes("business purpose") && 
@@ -914,25 +825,6 @@ function validateCertificateOfIncorporation(content, contentLower, pages, keyVal
     missingElements.push("Required text: 'Certificate of Incorporation'");
   }
   
-  // 2. Check for NJ Department of Treasury
-  // const hasTreasury = contentLower.includes("new jersey department of the treasury") || 
-  //                    contentLower.includes("nj department of the treasury") ||
-  //                    contentLower.includes("department of the treasury");
-  
-  // if (!hasTreasury) {
-  //   missingElements.push("Required keyword: 'New Jersey Department of the Treasury'");
-  //   suggestedActions.push("Verify certificate is issued by the NJ Department of Treasury");
-  // }
-  
-  // 3. Check for Division of Revenue & Enterprise Services
-  // const hasDivision = contentLower.includes("division of revenue and enterprise services") || 
-  //                    contentLower.includes("division of revenue & enterprise services");
-  
-  // if (!hasDivision) {
-  //   missingElements.push("Required keyword: 'Division of Revenue & Enterprise Services'");
-  //   suggestedActions.push("Verify certificate mentions Division of Revenue & Enterprise Services");
-  // }
-  
   // 4. Check for Board of Directors listing
   const hasDirectors = contentLower.includes("board of directors") || 
                       contentLower.includes("directors") || 
@@ -943,26 +835,6 @@ function validateCertificateOfIncorporation(content, contentLower, pages, keyVal
     missingElements.push("Board of Directors section is missing");
     suggestedActions.push("Verify the certificate lists the Board of Directors");
   }
-  
-  // 5. Check for Incorporators section
-  // const hasIncorporators = contentLower.includes("incorporators:") || 
-  //                         contentLower.includes("incorporator");
-  
-  // if (!hasIncorporators) {
-  //   missingElements.push("Incorporators section is missing");
-  //   suggestedActions.push("Verify the certificate lists the Incorporators");
-  // }
-  
-  // // 6. Check for state seal
-  // const hasStateSeal = contentLower.includes("official seal") || 
-  //                     contentLower.includes("seal at trenton") ||
-  //                     contentLower.includes("testimony whereof") ||
-  //                     (contentLower.includes("seal") && contentLower.includes("affixed"));
-  
-  // if (!hasStateSeal) {
-  //   missingElements.push("State seal is missing");
-  //   suggestedActions.push("Verify the certificate has the State seal affixed");
-  // }
   
   return { 
     missingElements, 
@@ -984,50 +856,6 @@ function validateIRSDeterminationLetter(content, contentLower, pages, keyValuePa
     missingElements.push("IRS letterhead is missing");
     suggestedActions.push("Verify the letter is on IRS letterhead showing 'Internal Revenue Service'");
   }
-  
-  // // Check for Employer Identification Number (EIN/FEIN)
-  // const hasEIN = contentLower.includes("employer identification number") || 
-  //               contentLower.match(/ein\s*:/i);
-  
-  // if (!hasEIN) {
-  //   missingElements.push("Employer Identification Number (EIN) is missing");
-  //   suggestedActions.push("Verify the letter includes an Employer Identification Number");
-  // }
-  
-  // Check for Contact Person information
-  // const hasContactPerson = contentLower.includes("person to contact") || 
-  //                         contentLower.includes("contact telephone");
-  
-  // if (!hasContactPerson) {
-  //   missingElements.push("Contact person information");
-  //   suggestedActions.push("Verify the letter includes contact person details");
-  // }
-  
-  // Check for 'favorable determination' language
-  // const hasFavorableDetermination = contentLower.includes("favorable determination") || 
-  //                                  contentLower.includes("we are issuing this favorable");
-  
-  // if (!hasFavorableDetermination) {
-  //   missingElements.push("Favorable determination statement");
-  //   suggestedActions.push("Verify the letter explicitly states it is a favorable determination");
-  // }
-  
-  // Check for Director's signature
-  // const hasDirectorSignature = contentLower.includes("director") ||
-  //                             contentLower.includes("sincerely");
-  
-  // if (!hasDirectorSignature) {
-  //   missingElements.push("Director's signature");
-  //   suggestedActions.push("Verify the letter contains the signature of an IRS Director/official");
-  // }
-  
-  // Check for amendments information (specific to this type of letter)
-  // const hasAmendmentsInfo = contentLower.includes("amendments dated");
-  
-  // if (!hasAmendmentsInfo) {
-  //   missingElements.push("Amendments information");
-  //   suggestedActions.push("Verify the letter references specific plan amendments");
-  // }
   
   return { 
     missingElements, 
@@ -1147,13 +975,6 @@ function validateCertificateOfTradeName(content, contentLower, pages, keyValuePa
   if (!contentLower.includes("certificate of trade name")) {
     missingElements.push("Required keyword: 'Certificate of Trade Name'");
   }
-  
-  // Check for N.J.S.A. statute reference
-  // const hasNJSAStatute = content.includes("N.J.S.A.");
-  // if (!hasNJSAStatute) {
-  //   missingElements.push("N.J.S.A. statute reference");
-  //   suggestedActions.push("Verify document is the standard Certificate of Trade Name showing N.J.S.A. statute");
-  // }
   
   return { 
     missingElements, 
