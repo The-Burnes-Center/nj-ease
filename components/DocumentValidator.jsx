@@ -54,11 +54,8 @@ export default function EnhancedDocumentValidator() {
       case 'operating-agreement':
       case 'cert-formation':
       case 'cert-formation-independent':
-      case 'cert-good-standing-long':
-      case 'cert-good-standing-short':
       case 'cert-incorporation':
       case 'cert-authority':
-      case 'cert-authority-auto':
       case 'cert-alternative-name':
         newRequiredFields.organizationName = true;
         break;
