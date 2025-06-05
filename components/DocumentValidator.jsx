@@ -28,7 +28,7 @@ export default function DocumentValidator() {
   const [dragCounter, setDragCounter] = useState(0);
 
   const documentTypes =  [
-    { value: 'tax-clearance-online', label: 'Tax Clearance Certificate (Online Generated)' },
+    { value: 'tax-clearance-online', label: 'Tax Clearance Certificate (Online)' },
     { value: 'tax-clearance-manual', label: 'Tax Clearance Certificate (Manually Generated)' },
     { value: 'cert-alternative-name', label: 'Certificate of Alternative Name' },
     { value: 'cert-trade-name', label: 'Certificate of Trade Name' },
@@ -229,19 +229,22 @@ export default function DocumentValidator() {
   };
 
   return (
-    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex justify-center items-center">
-      <div className="w-full h-screen flex flex-col px-6 py-6">
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100">
+      <div className="w-full h-full flex flex-col px-6 py-6">
         {/* Header */}
-        <div className="text-center mb-6 flex-shrink-0">
-          <h1 className="text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
-            NJ EASE <span className="text-gray-400 mx-2">|</span> <span className="bg-gradient-to-r from-gray-700 via-slate-700 to-gray-800 bg-clip-text text-transparent">Entrepreneurial Application Screening Engine</span>
+        <div className="text-center mb-5 flex-shrink-0 pt-3 pb-2">
+          <h1 className="text-3xl lg:text-3xl xl:text-4xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent flex flex-col lg:flex-row items-center justify-center gap-2 lg:gap-0">
+            NJ EASE
+            <div className="w-16 h-px bg-gray-400 my-2 block lg:hidden"></div>
+            <div className="w-px h-8 bg-gray-400 mx-4 hidden lg:block"></div> 
+            <span className="bg-gradient-to-r from-gray-700 via-slate-700 to-gray-800 bg-clip-text text-transparent text-2xl lg:text-3xl xl:text-4xl">Entrepreneurial Application Screening Engine</span>
           </h1>
         </div>
 
-        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 min-h-0">
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8">
           {/* Document Upload Section - Left */}
           <div className="lg:col-span-7 flex flex-col">
-            <div className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-300 flex-1 overflow-y-auto">
+            <div className="bg-white/80 backdrop-blur-sm p-4 sm:p-6 md:p-6 rounded-2xl shadow-xl border border-white/20 transition-all duration-300 h-full">
               <div className="mb-6">
                 <label className="block text-sm md:text-base font-semibold text-gray-800 mb-3">Document Type</label>
                 <div className="relative">
@@ -250,7 +253,7 @@ export default function DocumentValidator() {
                     onChange={(e) => {
                       setDocumentType(e.target.value);
                     }}
-                    className="w-full px-4 py-3 border-2 border-gray-200 text-gray-700 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-sm md:text-base bg-white/50 backdrop-blur-sm transition-all duration-200 hover:border-gray-300"
+                    className="w-full px-4 py-3 border-2 border-gray-200 text-gray-700 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-sm md:text-base bg-white/50 backdrop-blur-sm transition-all duration-200 hover:border-gray-300 appearance-none"
                   >
                     {documentTypes.map((type) => (
                       <option key={type.value} value={type.value}>
@@ -412,7 +415,7 @@ export default function DocumentValidator() {
           
           {/* Enhanced Validation Results Section */}
           <div className="lg:col-span-5 flex flex-col">
-            <div className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-300 flex-1 overflow-y-auto">
+            <div className="bg-white/80 backdrop-blur-sm p-6 rounded-2xl shadow-xl border border-white/20 transition-all duration-300 h-full">
               {validationResult ? (
                 <>
                   <div className={`flex items-center mb-8 p-6 rounded-2xl shadow-lg border-2 backdrop-blur-sm ${validationResult.missingElements && validationResult.missingElements.length > 0 
