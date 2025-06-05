@@ -260,7 +260,7 @@ export default function DocumentValidator() {
     }`}>
       <div className="w-full h-full flex flex-col px-6 py-6">
         {/* Header */}
-        <div className="text-center mb-5 flex-shrink-0 pt-3 pb-2 relative">
+        <div className="text-center mb-7 flex-shrink-0 pt-4 pb-2 relative">
           {/* Theme Toggle Button */}
           <button
             onClick={toggleTheme}
@@ -278,19 +278,19 @@ export default function DocumentValidator() {
             )}
           </button>
 
-          <h1 className={`text-3xl lg:text-3xl xl:text-4xl font-bold bg-gradient-to-r ${
+          <h1 className={`text-5xl lg:text-4xl xl:text-5xl font-bold bg-gradient-to-r ${
             isDarkMode
               ? 'from-blue-400 via-indigo-400 to-purple-400'
               : 'from-blue-600 via-indigo-600 to-purple-600'
           } bg-clip-text text-transparent flex flex-col lg:flex-row items-center justify-center gap-2 lg:gap-0`}>
             NJ EASE
-            <div className={`w-16 h-px ${isDarkMode ? 'bg-gray-600' : 'bg-gray-400'} my-2 block lg:hidden`}></div>
-            <div className={`w-px h-8 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-400'} mx-4 hidden lg:block`}></div> 
+            <div className={`w-32 h-px ${isDarkMode ? 'bg-gray-600' : 'bg-gray-400'} my-2 block lg:hidden`}></div>
+            <div className={`w-px h-10 ${isDarkMode ? 'bg-gray-600' : 'bg-gray-400'} mx-4 hidden lg:block`}></div> 
             <span className={`bg-gradient-to-r ${
               isDarkMode
                 ? 'from-gray-300 via-slate-300 to-gray-200'
                 : 'from-gray-700 via-slate-700 to-gray-800'
-            } bg-clip-text text-transparent text-2xl lg:text-3xl xl:text-4xl`}>Entrepreneurial Application Screening Engine</span>
+            } bg-clip-text text-transparent text-2xl lg:text-2xl xl:text-3xl`}>Entrepreneurial Application Screening Engine</span>
           </h1>
         </div>
 
@@ -301,7 +301,7 @@ export default function DocumentValidator() {
               isDarkMode
                 ? 'bg-gray-800/80 border-gray-700/20'
                 : 'bg-white/80 border-white/20'
-            } backdrop-blur-sm p-4 sm:p-6 md:p-6 rounded-2xl shadow-xl border transition-all duration-300 h-full`}>
+            } backdrop-blur-sm p-4 sm:p-5 md:p-5 rounded-2xl shadow-xl border transition-all duration-300 h-full`}>
               <div className="mb-6">
                 <label className={`block text-sm md:text-base font-semibold ${
                   isDarkMode ? 'text-gray-200' : 'text-gray-800'
@@ -312,7 +312,7 @@ export default function DocumentValidator() {
                     onChange={(e) => {
                       setDocumentType(e.target.value);
                     }}
-                    className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 text-sm md:text-base backdrop-blur-sm transition-all duration-200 appearance-none ${
+                    className={`w-full px-4 py-2 border-2 rounded-xl focus:outline-none focus:ring-4 text-sm md:text-base backdrop-blur-sm transition-all duration-200 appearance-none ${
                       isDarkMode
                         ? 'border-gray-600 text-gray-200 bg-gray-700/50 focus:ring-blue-500/20 focus:border-blue-400 hover:border-gray-500'
                         : 'border-gray-200 text-gray-700 bg-white/50 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300'
@@ -346,7 +346,7 @@ export default function DocumentValidator() {
                       name="organizationName"
                       value={formFields.organizationName}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 text-sm md:text-base backdrop-blur-sm transition-all duration-200 ${
+                      className={`w-full px-4 py-2 border-2 rounded-xl focus:outline-none focus:ring-4 text-sm md:text-base backdrop-blur-sm transition-all duration-200 ${
                         fieldErrors.organizationName 
                           ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500' 
                           : isDarkMode
@@ -370,7 +370,7 @@ export default function DocumentValidator() {
                       name="fein"
                       value={formFields.fein}
                       onChange={handleInputChange}
-                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 text-sm md:text-base backdrop-blur-sm transition-all duration-200 ${
+                      className={`w-full px-4 py-2 border-2 rounded-xl focus:outline-none focus:ring-4 text-sm md:text-base backdrop-blur-sm transition-all duration-200 ${
                         fieldErrors.fein 
                           ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500' 
                           : isDarkMode
@@ -389,7 +389,7 @@ export default function DocumentValidator() {
                   isDarkMode ? 'text-gray-200' : 'text-gray-800'
                 } mb-3`}>Upload Document</label>
                 <div 
-                  className={`relative w-full h-60 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 group ${
+                  className={`relative w-full h-58 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 group ${
                     isDragOver 
                       ? isDarkMode
                         ? 'border-blue-400 bg-gradient-to-br from-blue-900/30 to-indigo-900/30 scale-[1.02]'
@@ -586,7 +586,7 @@ export default function DocumentValidator() {
                       <ul className="space-y-3 ml-2">
                         {validationResult.missingElements.map((item, index) => (
                           <li key={index} className="flex items-start">
-                            <div className="w-2 h-2 rounded-full bg-red-500 mt-3 mr-4 flex-shrink-0 shadow-sm"></div>
+                            <div className="w-2 h-2 rounded-full bg-red-500 mt-2.5 mr-4 flex-shrink-0 shadow-sm"></div>
                             <p className={`text-sm md:text-base leading-relaxed ${
                               isDarkMode ? 'text-red-300' : 'text-red-700'
                             }`}>{item}</p>
@@ -670,7 +670,7 @@ export default function DocumentValidator() {
                       <ul className="space-y-3 ml-2">
                         {validationResult.suggestedActions.map((action, index) => (
                           <li key={index} className="flex items-start">
-                            <div className="w-2 h-2 rounded-full bg-blue-500 mt-3 mr-4 flex-shrink-0 shadow-sm"></div>
+                            <div className="w-2 h-2 rounded-full bg-blue-500 mt-2.5 mr-4 flex-shrink-0 shadow-sm"></div>
                             <p className={`text-sm md:text-base leading-relaxed ${
                               isDarkMode ? 'text-blue-300' : 'text-blue-700'
                             }`}>{action}</p>
