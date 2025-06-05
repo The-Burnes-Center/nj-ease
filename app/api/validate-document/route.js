@@ -311,14 +311,6 @@ function validateTaxClearanceOnline(content, contentLower, pages, keyValuePairs,
     suggestedActions.push("Obtain a more recent tax clearance certificate");
   }
   
-  // Check for validity period
-  const hasValidityPeriod = content.includes("valid for 180 days") || 
-                            content.includes("days from the date");
-  if (!hasValidityPeriod) {
-    missingElements.push("Certificate validity period is missing");
-    suggestedActions.push("Verify the certificate indicates its validity period");
-  }
-  
   // Check for signature
   const hasSignature = content.includes("Acting Director") ||
                        content.match(/Marita\s+R\.\s+Sciarrotta|John\s+J\.\s+Ficara/i);
@@ -477,14 +469,6 @@ function validateTaxClearanceManual(content, contentLower, pages, keyValuePairs,
   if (!isDateWithinSixMonths) {
     missingElements.push("Certificate must be dated within the past six months");
     suggestedActions.push("Obtain a more recent tax clearance certificate");
-  }
-  
-  // Check for validity period
-  const hasValidityPeriod = content.includes("valid for 180 days") || 
-                            content.includes("days from the date");
-  if (!hasValidityPeriod) {
-    missingElements.push("Certificate validity period is missing");
-    suggestedActions.push("Verify the certificate indicates its validity period");
   }
   
   // Check for signature
@@ -666,6 +650,13 @@ function validateCertificateOfFormation(content, contentLower, pages, keyValuePa
     missingElements.push("Signature of authorized state official is missing");
     suggestedActions.push("Verify document has been signed by an authorized state official");
   }
+
+  // Check for presence of any date
+  const hasDate = checkForDatePresence(content);
+  if (!hasDate) {
+    missingElements.push("Document must contain a date");
+    suggestedActions.push("Verify that the document includes a stamped date");
+  }
   
   // Check for verification info
   const hasVerificationInfo = /verify this certificate|verification|certification/i.test(content);
@@ -723,6 +714,17 @@ function validateCertificateOfFormationIndependent(content, contentLower, pages,
     if (!detectedOrgNameLower.includes(orgNameLower) && !orgNameLower.includes(detectedOrgNameLower)) {
       missingElements.push("Organization name doesn't match the one on the certificate");
       suggestedActions.push("Verify that the correct organization name was entered");
+    }
+  }
+
+  // Check for FEIN match if provided
+  if (formFields.fein && detectedOrganizationName) {
+    const feinName = formFields.fein.trim();
+    const detectedOrgNameLower = detectedOrganizationName.toLowerCase().trim();
+    
+    if (!detectedOrgNameLower.includes(feinName) && !feinName.includes(detectedOrgNameLower)) {
+      missingElements.push("FEIN (Federal Employer Identification Number) doesn't match the one on the certificate");
+      suggestedActions.push("Verify that the correct FEIN was entered");
     }
   }
   
@@ -785,16 +787,6 @@ function validateOperatingAgreement(content, contentLower, pages, keyValuePairs,
     suggestedActions.push("Verify the operating agreement is dated");
   }
   
-  // Check for business purpose section
-  const hasBusinessPurpose = contentLower.includes("business purpose") && 
-                            (contentLower.includes("purpose of the company") || 
-                             contentLower.match(/purpose.*is/i));
-  
-  if (!hasBusinessPurpose) {
-    missingElements.push("Business purpose section is missing");
-    suggestedActions.push("Verify the agreement defines a business purpose");
-  }
-  
   // Check for New Jersey reference
   const hasNewJersey = contentLower.includes("new jersey") || 
                       contentLower.includes("nj");
@@ -829,7 +821,8 @@ function validateCertificateOfIncorporation(content, contentLower, pages, keyVal
   const hasDirectors = contentLower.includes("board of directors") || 
                       contentLower.includes("directors") || 
                       contentLower.includes("incorporators") ||
-                      contentLower.includes("trustees");
+                      contentLower.includes("trustees") ||
+                      contentLower.includes("shareholders");
   
   if (!hasDirectors) {
     missingElements.push("Board of Directors section is missing");
@@ -855,6 +848,15 @@ function validateIRSDeterminationLetter(content, contentLower, pages, keyValuePa
   if (!hasIRSLetterhead) {
     missingElements.push("IRS letterhead is missing");
     suggestedActions.push("Verify the letter is on IRS letterhead showing 'Internal Revenue Service'");
+  }
+
+  // Check for signature
+  const hasSignature = content.includes("Sincerely,") ||
+                       content.includes("Director");
+  
+  if (!hasSignature) {
+    missingElements.push("Signature is missing");
+    suggestedActions.push("Verify the certificate has been signed by an authorized official");
   }
   
   return { 
