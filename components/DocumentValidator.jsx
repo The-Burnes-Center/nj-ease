@@ -229,277 +229,305 @@ export default function DocumentValidator() {
   };
 
   return (
-    <div className="container mx-auto">
-      <div className="col-span-full rounded-lg shadow-sm mb-5">
-          <h1 className="sm:text-xl md:text-2xl lg:text-3xl font-bold text-center text-white">NJ EASE - Entrepreneurial Application Screening Engine</h1>
-      </div>
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[80vh]">
-        {/* Header - Spans full width */}
-        
-        {/* Document Upload Section - Left */}
-        <div className="lg:col-span-7 bg-white p-6 rounded-lg shadow-sm h-full">
-          
-          <div className="mb-5">
-            <label className="block text-sm md:text-base font-medium text-gray-700 mb-1">Document Type</label>
-            <select
-              value={documentType}
-              onChange={(e) => {
-                setDocumentType(e.target.value);
-              }}
-              className="w-full px-3 py-2 border border-gray-300 text-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
-            >
-              {documentTypes.map((type) => (
-                <option key={type.value} value={type.value}>
-                  {type.label}
-                </option>
-              ))}
-            </select>
-          </div>
-          
-          {/* Centralized form fields */}
-          <div className="mb-5">
-            {requiredFields.organizationName && (
-              <div className="mb-4">
-                <label className="block text-sm md:text-base font-medium text-gray-700 mb-1">
-                  Organization Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="organizationName"
-                  value={formFields.organizationName}
-                  onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 text-gray-600 text-sm md:text-base ${
-                    fieldErrors.organizationName 
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                      : 'border-gray-300 focus:ring-blue-500'
-                  }`}
-                  placeholder="Enter organization name"
-                />
-                {fieldErrors.organizationName && (
-                  <p className="text-xs md:text-sm text-red-600 mt-1">{fieldErrors.organizationName}</p>
-                )}
+    <div className="min-h-screen w-full bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-100 flex justify-center items-center">
+      <div className="w-full h-screen flex flex-col px-6 py-6">
+        {/* Header */}
+        <div className="text-center mb-6 flex-shrink-0">
+          <h1 className="text-xl md:text-2xl lg:text-3xl xl:text-4xl font-bold bg-gradient-to-r from-blue-600 via-indigo-600 to-purple-600 bg-clip-text text-transparent">
+            NJ EASE <span className="text-gray-400 mx-2">|</span> <span className="bg-gradient-to-r from-gray-700 via-slate-700 to-gray-800 bg-clip-text text-transparent">Entrepreneurial Application Screening Engine</span>
+          </h1>
+        </div>
+
+        <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-8 min-h-0">
+          {/* Document Upload Section - Left */}
+          <div className="lg:col-span-7 flex flex-col">
+            <div className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-300 flex-1 overflow-y-auto">
+              <div className="mb-6">
+                <label className="block text-sm md:text-base font-semibold text-gray-800 mb-3">Document Type</label>
+                <div className="relative">
+                  <select
+                    value={documentType}
+                    onChange={(e) => {
+                      setDocumentType(e.target.value);
+                    }}
+                    className="w-full px-4 py-3 border-2 border-gray-200 text-gray-700 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-500/20 focus:border-blue-500 text-sm md:text-base bg-white/50 backdrop-blur-sm transition-all duration-200 hover:border-gray-300"
+                  >
+                    {documentTypes.map((type) => (
+                      <option key={type.value} value={type.value}>
+                        {type.label}
+                      </option>
+                    ))}
+                  </select>
+                  <div className="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                    <svg className="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                  </div>
+                </div>
               </div>
-            )}
-            
-            {requiredFields.fein && (
-              <div className="mb-4">
-                <label className="block text-sm md:text-base font-medium text-gray-700 mb-1">
-                  FEIN (Federal Employer Identification Number) <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  name="fein"
-                  value={formFields.fein}
-                  onChange={handleInputChange}
-                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 text-gray-600 text-sm md:text-base ${
-                    fieldErrors.fein 
-                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
-                      : 'border-gray-300 focus:ring-blue-500'
-                  }`}
-                  placeholder="Enter FEIN"
-                />
-                {fieldErrors.fein && (
-                  <p className="text-xs md:text-sm text-red-600 mt-1">{fieldErrors.fein}</p>
-                )}
-                <p className="text-xs md:text-sm text-gray-500 mt-1">This will be used to verify the last 3 digits on the tax clearance</p>
-              </div>
-            )}
-          </div>
-          
-          <div className="mb-6">
-            <label className="block text-sm md:text-base font-medium text-gray-700 mb-1">Upload Document</label>
-            <div 
-              className={`w-full h-40 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors duration-200 ${
-                isDragOver 
-                  ? 'border-blue-500 bg-blue-100' 
-                  : file 
-                    ? 'border-green-400 bg-green-50 hover:border-green-500' 
-                    : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
-              }`}
-              onClick={() => !isDragOver && document.getElementById('file-upload').click()}
-              onDragEnter={handleDragEnter}
-              onDragLeave={handleDragLeave}
-              onDragOver={handleDragOver}
-              onDrop={handleDrop}
-            >
-              <input
-                id="file-upload"
-                type="file"
-                accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg"
-                className="hidden"
-                onChange={handleFileChange}
-              />
               
-              {isDragOver ? (
-                <>
-                  <Upload className="h-12 w-12 text-blue-500 mb-2" />
-                  <p className="text-base md:text-lg font-medium text-blue-600">Drop your file here!</p>
-                  <p className="text-sm md:text-base text-blue-500 mt-1">Release to upload</p>
-                </>
-              ) : file ? (
-                <>
-                  <CheckCircle className="h-8 w-8 text-green-500 mb-2" />
-                  <p className="text-sm md:text-base text-gray-600 text-center font-medium">{fileName}</p>
-                  <p className="text-xs md:text-sm text-gray-500 mt-1">Click to change file or drag a new one</p>
-                </>
-              ) : (
-                <>
-                  <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                  <p className="text-sm md:text-base text-gray-600 font-medium">Click to browse files</p>
-                  <p className="text-xs md:text-sm text-gray-500 mt-1">or drag & drop your document here</p>
-                  <p className="text-xs md:text-sm text-gray-400 mt-2 bg-gray-100 px-2 py-1 rounded">PDF, DOCX, DOC, JPG, PNG (Max 50MB)</p>
-                </>
+              {/* Form fields */}
+              <div className="mb-6 space-y-6">
+                {requiredFields.organizationName && (
+                  <div className="space-y-2">
+                    <label className="block text-sm md:text-base font-semibold text-gray-800">
+                      Organization Name <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="organizationName"
+                      value={formFields.organizationName}
+                      onChange={handleInputChange}
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 text-gray-700 text-sm md:text-base bg-white/50 backdrop-blur-sm transition-all duration-200 placeholder-gray-400 ${
+                        fieldErrors.organizationName 
+                          ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500' 
+                          : 'border-gray-200 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300'
+                      }`}
+                      placeholder="Enter organization name"
+                    />
+                  </div>
+                )}
+                
+                {requiredFields.fein && (
+                  <div className="space-y-2">
+                    <label className="block text-sm md:text-base font-semibold text-gray-800">
+                      FEIN (Federal Employer Identification Number) <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="fein"
+                      value={formFields.fein}
+                      onChange={handleInputChange}
+                      className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none focus:ring-4 text-gray-700 text-sm md:text-base bg-white/50 backdrop-blur-sm transition-all duration-200 placeholder-gray-400 ${
+                        fieldErrors.fein 
+                          ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500' 
+                          : 'border-gray-200 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300'
+                      }`}
+                      placeholder="Enter FEIN"
+                    />
+                  </div>
+                )}
+              </div>
+              
+              {/* Modern Upload Area */}
+              <div className="mb-8">
+                <label className="block text-sm md:text-base font-semibold text-gray-800 mb-3">Upload Document</label>
+                <div 
+                  className={`relative w-full h-60 border-2 border-dashed rounded-2xl flex flex-col items-center justify-center cursor-pointer transition-all duration-300 group ${
+                    isDragOver 
+                      ? 'border-blue-500 bg-gradient-to-br from-blue-50 to-indigo-50 scale-[1.02]' 
+                      : file 
+                        ? 'border-emerald-400 bg-gradient-to-br from-emerald-50 to-green-50 hover:border-emerald-500 hover:scale-[1.01]' 
+                        : 'border-gray-300 bg-gradient-to-br from-gray-50 to-slate-50 hover:border-blue-400 hover:bg-gradient-to-br hover:from-blue-50 hover:to-indigo-50 hover:scale-[1.01]'
+                  }`}
+                  onClick={() => !isDragOver && document.getElementById('file-upload').click()}
+                  onDragEnter={handleDragEnter}
+                  onDragLeave={handleDragLeave}
+                  onDragOver={handleDragOver}
+                  onDrop={handleDrop}
+                >
+                  <input
+                    id="file-upload"
+                    type="file"
+                    accept=".pdf,.docx,.doc,.txt,.png,.jpg,.jpeg"
+                    className="hidden"
+                    onChange={handleFileChange}
+                  />
+                  
+                  {isDragOver ? (
+                    <>
+                      <div className="bg-blue-500 rounded-full p-4 mb-4 shadow-lg animate-bounce">
+                        <Upload className="h-8 w-8 text-white" />
+                      </div>
+                      <p className="text-base md:text-lg font-semibold text-blue-700">Drop your file here!</p>
+                      <p className="text-sm md:text-base text-blue-600 mt-1">Release to upload</p>
+                    </>
+                  ) : file ? (
+                    <>
+                      <div className="bg-emerald-500 rounded-full p-4 mb-4 shadow-lg">
+                        <CheckCircle className="h-8 w-8 text-white" />
+                      </div>
+                      <p className="text-sm md:text-base text-gray-700 text-center font-semibold">{fileName}</p>
+                      <p className="text-xs md:text-sm text-gray-500 mt-2 bg-white/60 px-3 py-1 rounded-full">
+                        Click to change file or drag a new one
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <div className="bg-gradient-to-r from-gray-200 to-slate-200 rounded-full p-4 mb-4 group-hover:from-blue-200 group-hover:to-indigo-200 transition-all duration-300">
+                        <Upload className="h-8 w-8 text-gray-500 group-hover:text-blue-600 transition-colors duration-300" />
+                      </div>
+                      <p className="text-sm md:text-base text-gray-700 font-semibold mb-1">Click to browse files</p>
+                      <p className="text-xs md:text-sm text-gray-500 mb-3">or drag & drop your document here</p>
+                      <div className="bg-white/80 backdrop-blur-sm px-4 py-2 rounded-full border border-gray-200">
+                        <p className="text-xs md:text-sm text-gray-600 font-medium">
+                          PDF, DOCX, DOC, JPG, PNG (Max 50MB)
+                        </p>
+                      </div>
+                    </>
+                  )}
+                </div>
+              </div>
+              
+              {/* Modern Button */}
+              <div className="flex justify-center">
+                <button
+                  className={`relative px-8 py-4 rounded-2xl font-semibold text-sm md:text-base transition-all duration-300 transform hover:scale-105 focus:outline-none focus:ring-4 ${
+                    isUploading
+                      ? 'bg-gray-400 cursor-not-allowed text-white'
+                      : 'bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white shadow-lg hover:shadow-xl focus:ring-blue-500/50'
+                  }`}
+                  onClick={validateDocument}
+                  disabled={isUploading}
+                >
+                  {isUploading ? (
+                    <div className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Validating...
+                    </div>
+                  ) : (
+                    <div className="flex items-center">
+                      <CheckCircle className="h-5 w-5 mr-2" />
+                      Validate Document
+                    </div>
+                  )}
+                </button>
+              </div>
+              
+              {error && (
+                <div className="mt-6 p-4 bg-gradient-to-r from-red-50 to-pink-50 border-l-4 border-red-500 rounded-xl shadow-sm">
+                  <div className="flex items-center">
+                    <div className="bg-red-500 rounded-full p-1 mr-3">
+                      <AlertCircle className="h-4 w-4 text-white" />
+                    </div>
+                    <p className="text-sm md:text-base text-red-700 font-medium">{error}</p>
+                  </div>
+                </div>
               )}
             </div>
           </div>
           
-          <div className="flex justify-center">
-            <button
-              className={`px-6 py-2 rounded-md font-medium transition-colors text-sm md:text-base ${
-                isUploading
-                  ? 'bg-gray-400 cursor-not-allowed text-white'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white'
-              }`}
-              onClick={validateDocument}
-              disabled={isUploading}
-            >
-              {isUploading ? (
-                <div className="flex items-center">
-                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                  </svg>
-                  Validating...
-                </div>
-              ) : "Validate Document"}
-            </button>
-          </div>
-          
-          {error && (
-            <div className="mt-6 p-3 bg-red-50 border border-red-200 rounded-md w-full">
-              <div className="flex items-center">
-                <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-                <p className="text-sm md:text-base text-red-600">{error}</p>
-              </div>
-            </div>
-          )}
-        </div>
-        
-        {/* Validation Results Section - Right side, full height */}
-        <div className="lg:col-span-5">
-          <div 
-            className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-200 h-full"
-          >
-            
-            {validationResult ? (
-              <>
-                <div className={`flex items-center mb-6 p-5 rounded-xl shadow-md border-2 ${validationResult.missingElements && validationResult.missingElements.length > 0 
-                  ? 'bg-gradient-to-r from-red-50 via-red-100 to-red-50 border-red-200' 
-                  : 'bg-gradient-to-r from-emerald-50 via-emerald-100 to-emerald-50 border-emerald-200'
-                }`}>
-                  {validationResult.missingElements && validationResult.missingElements.length > 0 ? (
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-500 shadow-lg mr-4">
-                      <AlertCircle className="h-6 w-6 text-white" />
+          {/* Enhanced Validation Results Section */}
+          <div className="lg:col-span-5 flex flex-col">
+            <div className="bg-white/80 backdrop-blur-sm p-8 rounded-2xl shadow-xl border border-white/20 hover:shadow-2xl transition-all duration-300 flex-1 overflow-y-auto">
+              {validationResult ? (
+                <>
+                  <div className={`flex items-center mb-8 p-6 rounded-2xl shadow-lg border-2 backdrop-blur-sm ${validationResult.missingElements && validationResult.missingElements.length > 0 
+                    ? 'bg-gradient-to-r from-red-50 via-red-100 to-pink-50 border-red-200/50' 
+                    : 'bg-gradient-to-r from-emerald-50 via-emerald-100 to-green-50 border-emerald-200/50'
+                  }`}>
+                    {validationResult.missingElements && validationResult.missingElements.length > 0 ? (
+                      <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-r from-red-500 to-red-600 shadow-xl mr-4">
+                        <AlertCircle className="h-6 w-6 text-white" />
+                      </div>
+                    ) : (
+                      <div className="flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-r from-emerald-500 to-emerald-600 shadow-xl mr-4">
+                        <CheckCircle className="h-6 w-6 text-white" />
+                      </div>
+                    )}
+                    <div className="flex-1">
+                      <h3 className={`font-bold text-lg md:text-xl mb-2 ${validationResult.missingElements && validationResult.missingElements.length > 0 ? 'text-red-800' : 'text-emerald-800'}`}>
+                        {validationResult.missingElements && validationResult.missingElements.length > 0 ? 'Validation Failed' : 'Validation Passed'}
+                      </h3>
+                      <p className={`text-sm md:text-base font-medium ${validationResult.missingElements && validationResult.missingElements.length > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                        {validationResult.missingElements && validationResult.missingElements.length > 0 
+                          ? 'Document validation completed with issues' 
+                          : 'Document validation completed successfully'
+                        }
+                      </p>
                     </div>
-                  ) : (
-                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500 shadow-lg mr-4">
-                      <CheckCircle className="h-6 w-6 text-white" />
+                  </div>
+                  
+                  {validationResult.missingElements && validationResult.missingElements.length > 0 && (
+                    <div className="mb-8 p-6 bg-gradient-to-br from-red-50 to-pink-50 border border-red-200/50 rounded-2xl shadow-lg backdrop-blur-sm">
+                      <div className="flex items-center mb-4">
+                        <div className="bg-red-500 rounded-xl p-2 mr-3 shadow-md">
+                          <AlertCircle className="h-5 w-5 text-white" />
+                        </div>
+                        <p className="text-sm md:text-base font-bold text-red-800">Issues Found</p>
+                      </div>
+                      <ul className="space-y-3 ml-2">
+                        {validationResult.missingElements.map((item, index) => (
+                          <li key={index} className="flex items-start">
+                            <div className="w-2 h-2 rounded-full bg-red-500 mt-3 mr-4 flex-shrink-0 shadow-sm"></div>
+                            <p className="text-sm md:text-base text-red-700 leading-relaxed">{item}</p>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
                   )}
-                  <div className="flex-1">
-                    <h3 className={`font-bold text-lg md:text-xl mb-1 ${validationResult.missingElements && validationResult.missingElements.length > 0 ? 'text-red-800' : 'text-emerald-800'}`}>
-                      {validationResult.missingElements && validationResult.missingElements.length > 0 ? 'Validation Failed' : 'Validation Passed'}
-                    </h3>
-                    <p className={`text-sm md:text-base ${validationResult.missingElements && validationResult.missingElements.length > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
-                      {validationResult.missingElements && validationResult.missingElements.length > 0 
-                        ? 'Document validation completed with issues' 
-                        : 'Document validation completed successfully'
-                      }
-                    </p>
-                  </div>
-                </div>
-                
-                {validationResult.missingElements && validationResult.missingElements.length > 0 && (
-                  <div className="mb-6 p-5 bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-xl shadow-sm">
-                    <div className="flex items-center mb-3">
-                      <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
-                      <p className="text-sm md:text-base font-semibold text-red-800">Issues Found</p>
-                    </div>
-                    <ul className="space-y-2 ml-2">
-                      {validationResult.missingElements.map((item, index) => (
-                        <li key={index} className="flex items-start">
-                          <div className="w-2 h-2 rounded-full bg-red-500 mt-2 mr-3 flex-shrink-0"></div>
-                          <p className="text-sm md:text-base text-red-700 leading-relaxed">{item}</p>
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                )}
-                
-                {(!validationResult.missingElements || validationResult.missingElements.length === 0) && validationResult.documentInfo && (
-                  <div className="mb-6 p-5 bg-gradient-to-br from-emerald-50 to-green-100 border border-emerald-200 rounded-xl shadow-sm">
-                    <div className="flex items-center mb-3">
-                      <CheckCircle className="h-5 w-5 text-emerald-600 mr-2" />
-                      <p className="text-sm md:text-base font-semibold text-emerald-800">Document Information</p>
-                    </div>
-                    <div className="bg-white/60 p-4 rounded-lg border border-emerald-200/50">
-                      <div className="grid grid-cols-1 gap-2">
-                        {validationResult.documentInfo.pageCount && (
-                          <div className="flex items-center text-xs md:text-sm text-emerald-700">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2"></div>
-                            <span>Pages: <span className="font-medium">{validationResult.documentInfo.pageCount}</span></span>
-                          </div>
-                        )}
-                        {validationResult.documentInfo.wordCount && (
-                          <div className="flex items-center text-xs md:text-sm text-emerald-700">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2"></div>
-                            <span>Words: <span className="font-medium">{validationResult.documentInfo.wordCount}</span></span>
-                          </div>
-                        )}
-                        {validationResult.documentInfo.containsHandwriting !== undefined && (
-                          <div className="flex items-center text-xs md:text-sm text-emerald-700">
-                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2"></div>
-                            <span>Contains handwriting: <span className="font-medium">{validationResult.documentInfo.containsHandwriting ? 'Yes' : 'No'}</span></span>
-                          </div>
-                        )}
+                  
+                  {(!validationResult.missingElements || validationResult.missingElements.length === 0) && validationResult.documentInfo && (
+                    <div className="mb-8 p-6 bg-gradient-to-br from-emerald-50 to-green-50 border border-emerald-200/50 rounded-2xl shadow-lg backdrop-blur-sm">
+                      <div className="flex items-center mb-4">
+                        <div className="bg-emerald-500 rounded-xl p-2 mr-3 shadow-md">
+                          <CheckCircle className="h-5 w-5 text-white" />
+                        </div>
+                        <p className="text-sm md:text-base font-bold text-emerald-800">Document Information</p>
+                      </div>
+                      <div className="bg-white/70 backdrop-blur-sm p-5 rounded-xl border border-emerald-200/50 shadow-sm">
+                        <div className="grid grid-cols-1 gap-3">
+                          {validationResult.documentInfo.pageCount && (
+                            <div className="flex items-center text-xs md:text-sm text-emerald-700 bg-emerald-50/50 px-3 py-2 rounded-lg">
+                              <div className="w-2 h-2 rounded-full bg-emerald-500 mr-3 shadow-sm"></div>
+                              <span className="font-medium">Pages: <span className="font-bold">{validationResult.documentInfo.pageCount}</span></span>
+                            </div>
+                          )}
+                          {validationResult.documentInfo.wordCount && (
+                            <div className="flex items-center text-xs md:text-sm text-emerald-700 bg-emerald-50/50 px-3 py-2 rounded-lg">
+                              <div className="w-2 h-2 rounded-full bg-emerald-500 mr-3 shadow-sm"></div>
+                              <span className="font-medium">Words: <span className="font-bold">{validationResult.documentInfo.wordCount}</span></span>
+                            </div>
+                          )}
+                          {validationResult.documentInfo.containsHandwriting !== undefined && (
+                            <div className="flex items-center text-xs md:text-sm text-emerald-700 bg-emerald-50/50 px-3 py-2 rounded-lg">
+                              <div className="w-2 h-2 rounded-full bg-emerald-500 mr-3 shadow-sm"></div>
+                              <span className="font-medium">Contains handwriting: <span className="font-bold">{validationResult.documentInfo.containsHandwriting ? 'Yes' : 'No'}</span></span>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
-                  </div>
-                )}
-                
-                {validationResult.suggestedActions && validationResult.suggestedActions.length > 0 && (
-                  <div className="p-5 bg-gradient-to-br from-blue-50 to-indigo-100 border border-blue-200 rounded-xl shadow-sm">
-                    <div className="flex items-center mb-3">
-                      <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center mr-2">
-                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                        </svg>
+                  )}
+                  
+                  {validationResult.suggestedActions && validationResult.suggestedActions.length > 0 && (
+                    <div className="p-6 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200/50 rounded-2xl shadow-lg backdrop-blur-sm">
+                      <div className="flex items-center mb-4">
+                        <div className="w-10 h-10 rounded-xl bg-gradient-to-r from-blue-500 to-indigo-500 flex items-center justify-center mr-3 shadow-md">
+                          <svg className="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                          </svg>
+                        </div>
+                        <p className="text-sm md:text-base font-bold text-blue-800">Suggested Actions</p>
                       </div>
-                      <p className="text-sm md:text-base font-semibold text-blue-800">Suggested Actions</p>
+                      <ul className="space-y-3 ml-2">
+                        {validationResult.suggestedActions.map((action, index) => (
+                          <li key={index} className="flex items-start">
+                            <div className="w-2 h-2 rounded-full bg-blue-500 mt-3 mr-4 flex-shrink-0 shadow-sm"></div>
+                            <p className="text-sm md:text-base text-blue-700 leading-relaxed">{action}</p>
+                          </li>
+                        ))}
+                      </ul>
                     </div>
-                    <ul className="space-y-2 ml-2">
-                      {validationResult.suggestedActions.map((action, index) => (
-                        <li key={index} className="flex items-start">
-                          <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 mr-3 flex-shrink-0"></div>
-                          <p className="text-sm md:text-base text-blue-700 leading-relaxed">{action}</p>
-                        </li>
-                      ))}
-                    </ul>
+                  )}
+                </>
+              ) : (
+                // Modern empty state
+                <div className="p-12 bg-gradient-to-br from-gray-50 to-slate-50 border-2 border-dashed border-gray-300 rounded-2xl flex flex-col items-center justify-center h-full">
+                  <div className="bg-gradient-to-r from-blue-500 to-indigo-500 rounded-2xl p-6 mb-6 shadow-xl">
+                    <FileText className="h-16 w-16 text-white" />
                   </div>
-                )}
-              </>
-            ) : (
-              // Empty state when no validation has been performed
-              <div className="p-8 bg-gray-50 border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center h-full">
-                <div className="bg-blue-50 rounded-full p-4 mb-4">
-                  <FileText className="h-14 w-14 text-blue-500" />
+                  <h3 className="text-gray-800 text-base md:text-2xl font-bold mb-3 text-center">No Document Validated</h3>
+                  <p className="text-gray-600 text-center max-w-xs mb-6 text-sm md:text-base leading-relaxed">
+                    Your document validation results will appear here after you upload and validate a document.
+                  </p>
+                  <div className="w-16 h-1 bg-gradient-to-r from-blue-400 to-indigo-400 rounded-full"></div>
                 </div>
-                <h3 className="text-gray-800 text-base md:text-lg font-medium mb-2 text-center">No Document Validated</h3>
-                <p className="text-gray-600 text-center max-w-xs mb-4 text-sm md:text-base">
-                  Your document validation results will appear here after you upload and validate a document.
-                </p>
-              </div>
-            )}
+              )}
+            </div>
           </div>
         </div>
       </div>
