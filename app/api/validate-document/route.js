@@ -1092,6 +1092,7 @@ function validateCertificateOfTradeName(content, contentLower, pages, keyValuePa
   // Check for required elements
   if (!contentLower.includes("certificate of trade name")) {
     missingElements.push("Required keyword: 'Certificate of Trade Name'");
+    suggestedActions.push(`Verify that the document is a Certificate of Trade Name`);
   }
   
   return { 
