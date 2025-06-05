@@ -13,6 +13,132 @@ function* getTextOfSpans(content, spans) {
   }
 }
 
+// Helper function to normalize organization names for better matching
+function normalizeOrganizationName(name) {
+  if (!name || typeof name !== 'string') return '';
+  
+  let normalized = name.toLowerCase().trim();
+  
+  // Remove common punctuation and extra spaces
+  normalized = normalized.replace(/[,\.]/g, '').replace(/\s+/g, ' ').trim();
+  
+  // Define abbreviation mappings (abbreviation -> full form)
+  const abbreviationMap = {
+    'llc': 'limited liability company',
+    'inc': 'incorporated',
+    'corp': 'corporation',
+    'co': 'company',
+    'ltd': 'limited',
+    'lp': 'limited partnership',
+    'llp': 'limited liability partnership',
+    'pllc': 'professional limited liability company',
+    'pc': 'professional corporation',
+    'pa': 'professional association',
+    'plc': 'professional limited company'
+  };
+  
+  // Create reverse mapping (full form -> abbreviation)
+  const reverseMap = {};
+  Object.entries(abbreviationMap).forEach(([abbr, full]) => {
+    reverseMap[full] = abbr;
+  });
+  
+  // Replace abbreviations with full forms
+  Object.entries(abbreviationMap).forEach(([abbr, full]) => {
+    // More robust pattern to ensure we only match actual entity type abbreviations
+    // This matches the abbreviation only when it's:
+    // 1. At word boundaries (\b)
+    // 2. Optionally followed by a period
+    // 3. At the end of the string or followed by whitespace/punctuation
+    const abbrPattern = new RegExp(`\\b${abbr}\\.?(?=\\s|$|[,;])`, 'gi');
+    normalized = normalized.replace(abbrPattern, full);
+  });
+  
+  return normalized;
+}
+
+// Helper function to check if two organization names match (accounting for abbreviations)
+function organizationNamesMatch(name1, name2) {
+  if (!name1 || !name2) return false;
+  
+  const normalized1 = normalizeOrganizationName(name1);
+  const normalized2 = normalizeOrganizationName(name2);
+  
+  // Direct match after normalization
+  if (normalized1 === normalized2) return true;
+  
+  // Check if one contains the other (for partial matches)
+  // But only if they have the same entity type or one doesn't have an entity type
+  if (normalized1.includes(normalized2) || normalized2.includes(normalized1)) {
+    // Extract entity types to ensure we're not matching different entity types
+    const getEntityType = (name) => {
+      const entityTypes = ['limited liability company', 'incorporated', 'corporation', 'company', 'limited', 'limited partnership', 'limited liability partnership', 'professional limited liability company', 'professional corporation', 'professional association', 'professional limited company'];
+      for (const entityType of entityTypes) {
+        if (name.includes(entityType)) {
+          return entityType;
+        }
+      }
+      return null;
+    };
+    
+    const entity1 = getEntityType(normalized1);
+    const entity2 = getEntityType(normalized2);
+    
+    // Allow match only if:
+    // 1. Both have the same entity type, or
+    // 2. One has no entity type (partial name), or  
+    // 3. One is a more specific version of the other (like "company" vs "limited liability company")
+    if (entity1 === entity2 || 
+        entity1 === null || 
+        entity2 === null ||
+        (entity1 && entity2 && (entity1.includes(entity2) || entity2.includes(entity1)))) {
+      return true;
+    }
+    
+    // Different entity types should not match
+    return false;
+  }
+  
+  // More restrictive core business name matching
+  // Only do this if the entity types are compatible
+  const removeEntitySuffixes = (name) => {
+    return name.replace(/\b(limited liability company|incorporated|corporation|company|limited|limited partnership|limited liability partnership|professional limited liability company|professional corporation|professional association|professional limited company)\b/gi, '').trim();
+  };
+  
+  const core1 = removeEntitySuffixes(normalized1);
+  const core2 = removeEntitySuffixes(normalized2);
+  
+  if (core1 && core2 && core1.length > 2 && core2.length > 2 && core1 === core2) {
+    // Extract entity types to ensure compatibility
+    const getEntityType = (name) => {
+      const entityTypes = ['limited liability company', 'incorporated', 'corporation', 'company', 'limited', 'limited partnership', 'limited liability partnership', 'professional limited liability company', 'professional corporation', 'professional association', 'professional limited company'];
+      for (const entityType of entityTypes) {
+        if (name.includes(entityType)) {
+          return entityType;
+        }
+      }
+      return null;
+    };
+    
+    const entity1 = getEntityType(normalized1);
+    const entity2 = getEntityType(normalized2);
+    
+    // Only match core names if entity types are the same or compatible
+    if (entity1 === entity2 || 
+        entity1 === null || 
+        entity2 === null ||
+        // Allow some compatible entity types (these are variations of similar concepts)
+        (entity1 === 'corporation' && entity2 === 'incorporated') ||
+        (entity1 === 'incorporated' && entity2 === 'corporation') ||
+        (entity1 === 'company' && entity2 === 'corporation') ||
+        (entity1 === 'corporation' && entity2 === 'company')) {
+      return true;
+    }
+  }
+  
+  return false;
+}
+
 export async function POST(request) {
   try {
     // Set a timeout to abort if processing takes too long
@@ -213,10 +339,7 @@ function validateTaxClearanceOnline(content, contentLower, pages, keyValuePairs,
   
   // Check for organization name match if provided
   if (formFields.organizationName && detectedOrganizationName) {
-    const orgNameLower = formFields.organizationName.toLowerCase().trim();
-    const detectedOrgNameLower = detectedOrganizationName.toLowerCase().trim();
-    
-    if (!detectedOrgNameLower.includes(orgNameLower) && !orgNameLower.includes(detectedOrgNameLower)) {
+    if (!organizationNamesMatch(formFields.organizationName, detectedOrganizationName)) {
       missingElements.push("Organization name doesn't match the one on the certificate");
       suggestedActions.push("Verify that the correct organization name was entered");
     }
@@ -379,10 +502,7 @@ function validateTaxClearanceManual(content, contentLower, pages, keyValuePairs,
   
   // Check for organization name match if provided
   if (formFields.organizationName && detectedOrganizationName) {
-    const orgNameLower = formFields.organizationName.toLowerCase().trim();
-    const detectedOrgNameLower = detectedOrganizationName.toLowerCase().trim();
-    
-    if (!detectedOrgNameLower.includes(orgNameLower) && !orgNameLower.includes(detectedOrgNameLower)) {
+    if (!organizationNamesMatch(formFields.organizationName, detectedOrganizationName)) {
       missingElements.push("Organization name doesn't match the one on the certificate");
       suggestedActions.push("Verify that the correct organization name was entered");
     }
@@ -546,18 +666,7 @@ function validateCertificateAlternativeName(content, contentLower, pages, keyVal
   
   // Check for organization name match if provided
   if (formFields && formFields.organizationName && detectedOrganizationName) {
-    const orgNameLower = formFields.organizationName.toLowerCase().trim();
-    const detectedOrgNameLower = detectedOrganizationName.toLowerCase().trim();
-    
-    // More flexible matching that accounts for common variations
-    const isMatch = 
-      detectedOrgNameLower.includes(orgNameLower) || 
-      orgNameLower.includes(detectedOrgNameLower) ||
-      // Remove common suffixes for matching
-      detectedOrgNameLower.replace(/,?\s*(llc|inc|corp|corporation|company|lp|llp)\.?$/i, '').trim() === 
-        orgNameLower.replace(/,?\s*(llc|inc|corp|corporation|company|lp|llp)\.?$/i, '').trim();
-    
-    if (!isMatch) {
+    if (!organizationNamesMatch(formFields.organizationName, detectedOrganizationName)) {
       missingElements.push("Organization name doesn't match the one on the certificate");
       suggestedActions.push(`Verify that the correct organization name was entered. Certificate shows: "${detectedOrganizationName}"`);
     }
@@ -620,10 +729,7 @@ function validateCertificateOfFormation(content, contentLower, pages, keyValuePa
   
   // Check for organization name match if provided
   if (formFields.organizationName && detectedOrganizationName) {
-    const orgNameLower = formFields.organizationName.toLowerCase().trim();
-    const detectedOrgNameLower = detectedOrganizationName.toLowerCase().trim();
-    
-    if (!detectedOrgNameLower.includes(orgNameLower) && !orgNameLower.includes(detectedOrgNameLower)) {
+    if (!organizationNamesMatch(formFields.organizationName, detectedOrganizationName)) {
       missingElements.push("Organization name doesn't match the one on the certificate");
       suggestedActions.push("Verify that the correct organization name was entered");
     }
@@ -708,10 +814,7 @@ function validateCertificateOfFormationIndependent(content, contentLower, pages,
   
   // Check for organization name match if provided
   if (formFields.organizationName && detectedOrganizationName) {
-    const orgNameLower = formFields.organizationName.toLowerCase().trim();
-    const detectedOrgNameLower = detectedOrganizationName.toLowerCase().trim();
-    
-    if (!detectedOrgNameLower.includes(orgNameLower) && !orgNameLower.includes(detectedOrgNameLower)) {
+    if (!organizationNamesMatch(formFields.organizationName, detectedOrganizationName)) {
       missingElements.push("Organization name doesn't match the one on the certificate");
       suggestedActions.push("Verify that the correct organization name was entered");
     }
@@ -968,18 +1071,7 @@ function validateCertificateOfAuthority(content, contentLower, pages, keyValuePa
   
   // Check for organization name match if provided
   if (formFields && formFields.organizationName && detectedOrganizationName) {
-    const orgNameLower = formFields.organizationName.toLowerCase().trim();
-    const detectedOrgNameLower = detectedOrganizationName.toLowerCase().trim();
-    
-    // More flexible matching that accounts for common variations
-    const isMatch = 
-      detectedOrgNameLower.includes(orgNameLower) || 
-      orgNameLower.includes(detectedOrgNameLower) ||
-      // Remove common suffixes for matching
-      detectedOrgNameLower.replace(/,?\s*(llc|inc|corp|corporation|company|lp|llp)\.?$/i, '').trim() === 
-        orgNameLower.replace(/,?\s*(llc|inc|corp|corporation|company|lp|llp)\.?$/i, '').trim();
-    
-    if (!isMatch) {
+    if (!organizationNamesMatch(formFields.organizationName, detectedOrganizationName)) {
       missingElements.push("Organization name doesn't match the one on the certificate");
       suggestedActions.push(`Verify that the correct organization name was entered. Certificate shows: "${detectedOrganizationName}"`);
     }
