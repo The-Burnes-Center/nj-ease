@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import { Upload, CheckCircle, AlertCircle, FileText } from 'lucide-react';
 
-export default function EnhancedDocumentValidator() {
+export default function DocumentValidator() {
   const [file, setFile] = useState(null);
   const [fileName, setFileName] = useState('');
   const [isUploading, setIsUploading] = useState(false);
@@ -121,14 +121,14 @@ export default function EnhancedDocumentValidator() {
 
   return (
     <div className="container mx-auto">
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      <div className="col-span-full rounded-lg shadow-sm mb-5">
+          <h1 className="sm:text-xl md:text-2xl lg:text-3xl font-bold text-center text-white">NJ EASE - Entrepreneurial Application Screening Engine</h1>
+      </div>
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 min-h-[80vh]">
         {/* Header - Spans full width */}
-        <div className="col-span-full rounded-lg shadow-sm">
-          <h1 className="text-2xl font-bold text-center text-white">NJ EASE - Entrepreneurial Application Screening Engine</h1>
-        </div>
         
         {/* Document Upload Section - Left */}
-        <div className="lg:col-span-7 bg-white p-6 rounded-lg shadow-sm">
+        <div className="lg:col-span-7 bg-white p-6 rounded-lg shadow-sm h-full">
           
           <div className="mb-5">
             <label className="block text-sm font-medium text-gray-700 mb-1">Document Type</label>
@@ -250,51 +250,96 @@ export default function EnhancedDocumentValidator() {
             
             {validationResult ? (
               <>
-                <div className="flex items-center mb-3 bg-gray-50 p-3 rounded-md">
-                  <div className={`w-4 h-4 rounded-full mr-2 ${validationResult.missingElements && validationResult.missingElements.length > 0 ? 'bg-red-500' : 'bg-green-500'}`}></div>
-                  <span className={`font-medium ${validationResult.missingElements && validationResult.missingElements.length > 0 ? 'text-red-600' : 'text-green-600'}`}>
-                    {validationResult.missingElements && validationResult.missingElements.length > 0 ? 'Validation Failed' : 'Validation Passed'}
-                  </span>
+                <div className={`flex items-center mb-6 p-5 rounded-xl shadow-md border-2 ${validationResult.missingElements && validationResult.missingElements.length > 0 
+                  ? 'bg-gradient-to-r from-red-50 via-red-100 to-red-50 border-red-200' 
+                  : 'bg-gradient-to-r from-emerald-50 via-emerald-100 to-emerald-50 border-emerald-200'
+                }`}>
+                  {validationResult.missingElements && validationResult.missingElements.length > 0 ? (
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-red-500 shadow-lg mr-4">
+                      <AlertCircle className="h-6 w-6 text-white" />
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-center w-10 h-10 rounded-full bg-emerald-500 shadow-lg mr-4">
+                      <CheckCircle className="h-6 w-6 text-white" />
+                    </div>
+                  )}
+                  <div className="flex-1">
+                    <h3 className={`font-bold text-xl mb-1 ${validationResult.missingElements && validationResult.missingElements.length > 0 ? 'text-red-800' : 'text-emerald-800'}`}>
+                      {validationResult.missingElements && validationResult.missingElements.length > 0 ? 'Validation Failed' : 'Validation Passed'}
+                    </h3>
+                    <p className={`text-sm ${validationResult.missingElements && validationResult.missingElements.length > 0 ? 'text-red-600' : 'text-emerald-600'}`}>
+                      {validationResult.missingElements && validationResult.missingElements.length > 0 
+                        ? 'Document validation completed with issues' 
+                        : 'Document validation completed successfully'
+                      }
+                    </p>
+                  </div>
                 </div>
                 
-                {validationResult.missingElements && validationResult.missingElements.length > 0 ? (
-                  <div className="mt-4 p-4 bg-red-50 border border-red-200 rounded-md">
-                    <p className="text-sm font-medium text-gray-700 mb-2">The following issues were found:</p>
-                    <ul className="list-disc list-inside text-sm text-red-600 space-y-1">
+                {validationResult.missingElements && validationResult.missingElements.length > 0 && (
+                  <div className="mb-6 p-5 bg-gradient-to-br from-red-50 to-red-100 border border-red-200 rounded-xl shadow-sm">
+                    <div className="flex items-center mb-3">
+                      <AlertCircle className="h-5 w-5 text-red-600 mr-2" />
+                      <p className="text-base font-semibold text-red-800">Issues Found</p>
+                    </div>
+                    <ul className="space-y-2 ml-2">
                       {validationResult.missingElements.map((item, index) => (
-                        <li key={index}>{item}</li>
+                        <li key={index} className="flex items-start">
+                          <div className="w-2 h-2 rounded-full bg-red-500 mt-2 mr-3 flex-shrink-0"></div>
+                          <p className="text-sm text-red-700 leading-relaxed">{item}</p>
+                        </li>
                       ))}
                     </ul>
                   </div>
-                ) : (
-                  <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-md">
-                    <p className="text-sm text-green-600 mb-2">All validation checks passed successfully!</p>
-                    
-                    {validationResult.documentInfo && (
-                      <div className="mt-3 text-xs text-gray-600">
-                        <p className="font-medium mb-1">Document Information:</p>
-                        <ul className="list-disc list-inside ml-2 mt-1">
-                          {validationResult.documentInfo.pageCount && (
-                            <li>Pages: {validationResult.documentInfo.pageCount}</li>
-                          )}
-                          {validationResult.documentInfo.wordCount && (
-                            <li>Words: {validationResult.documentInfo.wordCount}</li>
-                          )}
-                          {validationResult.documentInfo.containsHandwriting !== undefined && (
-                            <li>Contains handwriting: {validationResult.documentInfo.containsHandwriting ? 'Yes' : 'No'}</li>
-                          )}
-                        </ul>
+                )}
+                
+                {(!validationResult.missingElements || validationResult.missingElements.length === 0) && validationResult.documentInfo && (
+                  <div className="mb-6 p-5 bg-gradient-to-br from-emerald-50 to-green-100 border border-emerald-200 rounded-xl shadow-sm">
+                    <div className="flex items-center mb-3">
+                      <CheckCircle className="h-5 w-5 text-emerald-600 mr-2" />
+                      <p className="text-base font-semibold text-emerald-800">Document Information</p>
+                    </div>
+                    <div className="bg-white/60 p-4 rounded-lg border border-emerald-200/50">
+                      <div className="grid grid-cols-1 gap-2">
+                        {validationResult.documentInfo.pageCount && (
+                          <div className="flex items-center text-xs text-emerald-700">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2"></div>
+                            <span>Pages: <span className="font-medium">{validationResult.documentInfo.pageCount}</span></span>
+                          </div>
+                        )}
+                        {validationResult.documentInfo.wordCount && (
+                          <div className="flex items-center text-xs text-emerald-700">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2"></div>
+                            <span>Words: <span className="font-medium">{validationResult.documentInfo.wordCount}</span></span>
+                          </div>
+                        )}
+                        {validationResult.documentInfo.containsHandwriting !== undefined && (
+                          <div className="flex items-center text-xs text-emerald-700">
+                            <div className="w-1.5 h-1.5 rounded-full bg-emerald-500 mr-2"></div>
+                            <span>Contains handwriting: <span className="font-medium">{validationResult.documentInfo.containsHandwriting ? 'Yes' : 'No'}</span></span>
+                          </div>
+                        )}
                       </div>
-                    )}
+                    </div>
                   </div>
                 )}
                 
                 {validationResult.suggestedActions && validationResult.suggestedActions.length > 0 && (
-                  <div className="mt-4 p-4 bg-blue-50 border border-blue-200 rounded-md">
-                    <p className="text-sm font-medium text-gray-700 mb-1">Suggested Actions:</p>
-                    <ul className="list-disc list-inside text-sm text-gray-600 mt-1">
+                  <div className="p-5 bg-gradient-to-br from-blue-50 to-indigo-100 border border-blue-200 rounded-xl shadow-sm">
+                    <div className="flex items-center mb-3">
+                      <div className="w-5 h-5 rounded-full bg-blue-500 flex items-center justify-center mr-2">
+                        <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                      </div>
+                      <p className="text-base font-semibold text-blue-800">Suggested Actions</p>
+                    </div>
+                    <ul className="space-y-2 ml-2">
                       {validationResult.suggestedActions.map((action, index) => (
-                        <li key={index}>{action}</li>
+                        <li key={index} className="flex items-start">
+                          <div className="w-2 h-2 rounded-full bg-blue-500 mt-2 mr-3 flex-shrink-0"></div>
+                          <p className="text-sm text-blue-700 leading-relaxed">{action}</p>
+                        </li>
                       ))}
                     </ul>
                   </div>
