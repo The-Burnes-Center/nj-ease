@@ -18,6 +18,9 @@ export default function DocumentValidator() {
     organizationName: false,
     fein: false
   });
+  // Add drag & drop states
+  const [isDragOver, setIsDragOver] = useState(false);
+  const [dragCounter, setDragCounter] = useState(0);
 
   const documentTypes =  [
     { value: 'tax-clearance-online', label: 'Tax Clearance Certificate (Online Generated)' },
@@ -65,13 +68,76 @@ export default function DocumentValidator() {
     setError(null);
   }, [documentType]);
 
-  const handleFileChange = (e) => {
-    const selectedFile = e.target.files[0];
+  // Enhanced file handling function
+  const handleFile = (selectedFile) => {
     if (selectedFile) {
+      // Validate file type
+      const allowedTypes = ['application/pdf', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/msword', 'text/plain', 'image/png', 'image/jpeg', 'image/jpg'];
+      const allowedExtensions = ['.pdf', '.docx', '.doc', '.txt', '.png', '.jpg', '.jpeg'];
+      
+      const fileExtension = '.' + selectedFile.name.split('.').pop().toLowerCase();
+      const isValidType = allowedTypes.includes(selectedFile.type) || allowedExtensions.includes(fileExtension);
+      
+      if (!isValidType) {
+        setError('Please select a valid file type: PDF, DOCX, DOC, TXT, PNG, JPG, or JPEG');
+        return;
+      }
+      
+      // Check file size (50MB limit)
+      if (selectedFile.size > 50 * 1024 * 1024) {
+        setError('File size must be less than 50MB');
+        return;
+      }
+      
       setFile(selectedFile);
       setFileName(selectedFile.name);
       setValidationResult(null);
       setError(null);
+    }
+  };
+
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    handleFile(selectedFile);
+  };
+
+  // Drag & Drop event handlers
+  const handleDragEnter = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragCounter(prev => prev + 1);
+    if (e.dataTransfer.items && e.dataTransfer.items.length > 0) {
+      setIsDragOver(true);
+    }
+  };
+
+  const handleDragLeave = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragCounter(prev => {
+      const newCount = prev - 1;
+      if (newCount <= 0) {
+        setIsDragOver(false);
+      }
+      return newCount;
+    });
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+  };
+
+  const handleDrop = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragOver(false);
+    setDragCounter(0);
+    
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const droppedFile = e.dataTransfer.files[0];
+      handleFile(droppedFile);
+      e.dataTransfer.clearData();
     }
   };
 
@@ -182,9 +248,18 @@ export default function DocumentValidator() {
           <div className="mb-6">
             <label className="block text-sm font-medium text-gray-700 mb-1">Upload Document</label>
             <div 
-              className={`w-full h-40 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors
-                ${file ? 'border-green-400 bg-green-50' : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'}`}
-              onClick={() => document.getElementById('file-upload').click()}
+              className={`w-full h-40 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors duration-200 ${
+                isDragOver 
+                  ? 'border-blue-500 bg-blue-100' 
+                  : file 
+                    ? 'border-green-400 bg-green-50 hover:border-green-500' 
+                    : 'border-gray-300 hover:border-blue-400 hover:bg-blue-50'
+              }`}
+              onClick={() => !isDragOver && document.getElementById('file-upload').click()}
+              onDragEnter={handleDragEnter}
+              onDragLeave={handleDragLeave}
+              onDragOver={handleDragOver}
+              onDrop={handleDrop}
             >
               <input
                 id="file-upload"
@@ -194,17 +269,24 @@ export default function DocumentValidator() {
                 onChange={handleFileChange}
               />
               
-              {file ? (
+              {isDragOver ? (
+                <>
+                  <Upload className="h-12 w-12 text-blue-500 mb-2" />
+                  <p className="text-lg font-medium text-blue-600">Drop your file here!</p>
+                  <p className="text-sm text-blue-500 mt-1">Release to upload</p>
+                </>
+              ) : file ? (
                 <>
                   <CheckCircle className="h-8 w-8 text-green-500 mb-2" />
-                  <p className="text-sm text-gray-600 text-center">{fileName}</p>
-                  <p className="text-xs text-gray-500 mt-1">Click to change file</p>
+                  <p className="text-sm text-gray-600 text-center font-medium">{fileName}</p>
+                  <p className="text-xs text-gray-500 mt-1">Click to change file or drag a new one</p>
                 </>
               ) : (
                 <>
                   <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-600">Click to upload your document</p>
-                  <p className="text-xs text-gray-500 mt-1">PDF, DOCX, DOC, JPG, PNG</p>
+                  <p className="text-sm text-gray-600 font-medium">Click to browse files</p>
+                  <p className="text-xs text-gray-500 mt-1">or drag & drop your document here</p>
+                  <p className="text-xs text-gray-400 mt-2 bg-gray-100 px-2 py-1 rounded">PDF, DOCX, DOC, JPG, PNG (Max 50MB)</p>
                 </>
               )}
             </div>
