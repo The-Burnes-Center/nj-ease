@@ -18,6 +18,11 @@ export default function DocumentValidator() {
     organizationName: false,
     fein: false
   });
+  // Add validation error states
+  const [fieldErrors, setFieldErrors] = useState({
+    organizationName: '',
+    fein: ''
+  });
   // Add drag & drop states
   const [isDragOver, setIsDragOver] = useState(false);
   const [dragCounter, setDragCounter] = useState(0);
@@ -147,10 +152,48 @@ export default function DocumentValidator() {
       ...prev,
       [name]: value
     }));
+    
+    // Clear field error when user starts typing
+    if (fieldErrors[name]) {
+      setFieldErrors(prev => ({
+        ...prev,
+        [name]: ''
+      }));
+    }
+  };
+
+  // Add validation function for required fields
+  const validateRequiredFields = () => {
+    const errors = {};
+    let isValid = true;
+
+    if (requiredFields.organizationName && !formFields.organizationName.trim()) {
+      errors.organizationName = 'Organization Name is required';
+      isValid = false;
+    }
+
+    if (requiredFields.fein && !formFields.fein.trim()) {
+      errors.fein = 'FEIN is required';
+      isValid = false;
+    }
+
+    setFieldErrors(errors);
+    return isValid;
   };
 
   const validateDocument = async () => {
-    if (!file) return;
+    // Check if file is uploaded
+    if (!file) {
+      setError('Please upload a document first');
+      return;
+    }
+    
+    // Validate required fields first
+    if (!validateRequiredFields()) {
+      setError('Please fill in all required fields');
+      return;
+    }
+    
     setIsUploading(true);
     setError(null);
     
@@ -197,13 +240,13 @@ export default function DocumentValidator() {
         <div className="lg:col-span-7 bg-white p-6 rounded-lg shadow-sm h-full">
           
           <div className="mb-5">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Document Type</label>
+            <label className="block text-sm md:text-base font-medium text-gray-700 mb-1">Document Type</label>
             <select
               value={documentType}
               onChange={(e) => {
                 setDocumentType(e.target.value);
               }}
-              className="w-full px-3 py-2 border border-gray-300 text-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="w-full px-3 py-2 border border-gray-300 text-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm md:text-base"
             >
               {documentTypes.map((type) => (
                 <option key={type.value} value={type.value}>
@@ -217,36 +260,54 @@ export default function DocumentValidator() {
           <div className="mb-5">
             {requiredFields.organizationName && (
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">Organization Name</label>
+                <label className="block text-sm md:text-base font-medium text-gray-700 mb-1">
+                  Organization Name <span className="text-red-500">*</span>
+                </label>
                 <input
                   type="text"
                   name="organizationName"
                   value={formFields.organizationName}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 text-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 text-gray-600 text-sm md:text-base ${
+                    fieldErrors.organizationName 
+                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                      : 'border-gray-300 focus:ring-blue-500'
+                  }`}
                   placeholder="Enter organization name"
                 />
+                {fieldErrors.organizationName && (
+                  <p className="text-xs md:text-sm text-red-600 mt-1">{fieldErrors.organizationName}</p>
+                )}
               </div>
             )}
             
             {requiredFields.fein && (
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">FEIN (Federal Employer Identification Number)</label>
+                <label className="block text-sm md:text-base font-medium text-gray-700 mb-1">
+                  FEIN (Federal Employer Identification Number) <span className="text-red-500">*</span>
+                </label>
                 <input
-                  type="number"
+                  type="text"
                   name="fein"
                   value={formFields.fein}
                   onChange={handleInputChange}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600"
+                  className={`w-full px-3 py-2 border rounded-md focus:outline-none focus:ring-2 text-gray-600 text-sm md:text-base ${
+                    fieldErrors.fein 
+                      ? 'border-red-300 focus:ring-red-500 focus:border-red-500' 
+                      : 'border-gray-300 focus:ring-blue-500'
+                  }`}
                   placeholder="Enter FEIN"
                 />
-                <p className="text-xs text-gray-500 mt-1">This will be used to verify the last 3 digits on the tax clearance</p>
+                {fieldErrors.fein && (
+                  <p className="text-xs md:text-sm text-red-600 mt-1">{fieldErrors.fein}</p>
+                )}
+                <p className="text-xs md:text-sm text-gray-500 mt-1">This will be used to verify the last 3 digits on the tax clearance</p>
               </div>
             )}
           </div>
           
           <div className="mb-6">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Upload Document</label>
+            <label className="block text-sm md:text-base font-medium text-gray-700 mb-1">Upload Document</label>
             <div 
               className={`w-full h-40 border-2 border-dashed rounded-lg flex flex-col items-center justify-center cursor-pointer transition-colors duration-200 ${
                 isDragOver 
@@ -272,21 +333,21 @@ export default function DocumentValidator() {
               {isDragOver ? (
                 <>
                   <Upload className="h-12 w-12 text-blue-500 mb-2" />
-                  <p className="text-lg font-medium text-blue-600">Drop your file here!</p>
-                  <p className="text-sm text-blue-500 mt-1">Release to upload</p>
+                  <p className="text-base md:text-lg font-medium text-blue-600">Drop your file here!</p>
+                  <p className="text-sm md:text-base text-blue-500 mt-1">Release to upload</p>
                 </>
               ) : file ? (
                 <>
                   <CheckCircle className="h-8 w-8 text-green-500 mb-2" />
-                  <p className="text-sm text-gray-600 text-center font-medium">{fileName}</p>
-                  <p className="text-xs text-gray-500 mt-1">Click to change file or drag a new one</p>
+                  <p className="text-sm md:text-base text-gray-600 text-center font-medium">{fileName}</p>
+                  <p className="text-xs md:text-sm text-gray-500 mt-1">Click to change file or drag a new one</p>
                 </>
               ) : (
                 <>
                   <Upload className="h-8 w-8 text-gray-400 mb-2" />
-                  <p className="text-sm text-gray-600 font-medium">Click to browse files</p>
-                  <p className="text-xs text-gray-500 mt-1">or drag & drop your document here</p>
-                  <p className="text-xs text-gray-400 mt-2 bg-gray-100 px-2 py-1 rounded">PDF, DOCX, DOC, JPG, PNG (Max 50MB)</p>
+                  <p className="text-sm md:text-base text-gray-600 font-medium">Click to browse files</p>
+                  <p className="text-xs md:text-sm text-gray-500 mt-1">or drag & drop your document here</p>
+                  <p className="text-xs md:text-sm text-gray-400 mt-2 bg-gray-100 px-2 py-1 rounded">PDF, DOCX, DOC, JPG, PNG (Max 50MB)</p>
                 </>
               )}
             </div>
@@ -294,13 +355,13 @@ export default function DocumentValidator() {
           
           <div className="flex justify-center">
             <button
-              className={`px-6 py-2 rounded-md font-medium transition-colors ${
-                file 
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                  : 'bg-gray-200 text-gray-500 cursor-not-allowed'
+              className={`px-6 py-2 rounded-md font-medium transition-colors text-sm md:text-base ${
+                isUploading
+                  ? 'bg-gray-400 cursor-not-allowed text-white'
+                  : 'bg-blue-600 hover:bg-blue-700 text-white'
               }`}
               onClick={validateDocument}
-              disabled={!file || isUploading}
+              disabled={isUploading}
             >
               {isUploading ? (
                 <div className="flex items-center">
@@ -318,7 +379,7 @@ export default function DocumentValidator() {
             <div className="mt-6 p-3 bg-red-50 border border-red-200 rounded-md w-full">
               <div className="flex items-center">
                 <AlertCircle className="h-5 w-5 text-red-500 mr-2" />
-                <p className="text-sm text-red-600">{error}</p>
+                <p className="text-sm md:text-base text-red-600">{error}</p>
               </div>
             </div>
           )}
