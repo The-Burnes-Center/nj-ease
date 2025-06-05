@@ -907,24 +907,41 @@ function validateCertificateOfAuthority(content, contentLower, pages, keyValuePa
   }
   
   // Check for Division of Taxation
-  const hasDivision = contentLower.includes("division of taxation");
+  const hasTaxationOrTreasury = contentLower.includes("division of taxation") || contentLower.includes("department of the treasury");
   
-  if (!hasDivision) {
-    missingElements.push("Required keyword: 'Division of Taxation'");
-    suggestedActions.push("Verify the certificate is issued by the Division of Taxation");
+  if (!hasTaxationOrTreasury) {
+    missingElements.push("Required keyword: 'Division of Taxation' or 'Department of the Treasury'");
+    suggestedActions.push("Verify the certificate is issued by the Division of Taxation or Department of the Treasury");
   }
   
   // Detect organization name
-  const authorizationLine = "this authorization is good only for the named person at the location specified herein this authorization is null and void if any change of ownership or address is effected." || "address.";
-  const authorizationIndex = contentLower.indexOf(authorizationLine);
+  // Look for organization name after specific phrases
+  const searchPhrases = [
+    "this authorization is good only for the named person at the location specified herein this authorization is null and void if any change of ownership or address is effected",
+    "change in ownership or address.",
+    "certificate of authority"
+  ];
   
-  if (authorizationIndex !== -1) {
-    // Get the text after the authorization line
-    const textAfterAuthorization = content.substring(authorizationIndex + authorizationLine.length);
+  let foundIndex = -1;
+  let foundPhraseLength = 0;
+  
+  // Find which phrase exists in the content
+  for (const phrase of searchPhrases) {
+    const index = contentLower.indexOf(phrase);
+    if (index !== -1) {
+      foundIndex = index;
+      foundPhraseLength = phrase.length;
+      break;
+    }
+  }
+  
+  if (foundIndex !== -1) {
+    // Get the text after the found phrase
+    const textAfterPhrase = content.substring(foundIndex + foundPhraseLength);
     
     // Split into lines and find the organization name
-    const lines = textAfterAuthorization.split('\n');
-    for (let i = 0; i < Math.min(3, lines.length); i++) {
+    const lines = textAfterPhrase.split('\n');
+    for (let i = 0; i < Math.min(5, lines.length); i++) {
       const line = lines[i].trim();
       // Skip empty lines or lines with less than 3 characters
       if (line && line.length > 3 && !line.match(/^\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}$/)) {
@@ -932,9 +949,16 @@ function validateCertificateOfAuthority(content, contentLower, pages, keyValuePa
         if (!line.toLowerCase().includes("tax registration") && 
             !line.toLowerCase().includes("tax effective date") &&
             !line.toLowerCase().includes("document locator") &&
-            !line.toLowerCase().includes("date issued")) {
+            !line.toLowerCase().includes("date issued") &&
+            !line.toLowerCase().includes("state of") &&
+            !line.toLowerCase().includes("department of") &&
+            !line.toLowerCase().includes("division of")) {
           detectedOrganizationName = line;
-          break;
+          // If it's all caps or has business entity indicators, it's very likely the org name
+          if ((line === line.toUpperCase() && line.length > 5) || 
+              /LLC|INC|CORP|CORPORATION|COMPANY|LP|LLP/i.test(line)) {
+            break;  // We're confident this is the org name
+          }
         }
       }
     }
