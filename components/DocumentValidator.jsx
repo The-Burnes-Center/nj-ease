@@ -14,11 +14,6 @@ export default function EnhancedDocumentValidator() {
     organizationName: '',
     fein: ''
   });
-  const [feedback, setFeedback] = useState('');
-  const [email, setEmail] = useState('');
-  const [feedbackSubmitting, setFeedbackSubmitting] = useState(false);
-  const [feedbackSuccess, setFeedbackSuccess] = useState(false);
-  const [feedbackError, setFeedbackError] = useState(null);
   const [requiredFields, setRequiredFields] = useState({
     organizationName: false,
     fein: false
@@ -88,14 +83,6 @@ export default function EnhancedDocumentValidator() {
     }));
   };
 
-  const handleFeedbackChange = (e) => {
-    setFeedback(e.target.value);
-  };
-
-  const handleEmailChange = (e) => {
-    setEmail(e.target.value);
-  };
-
   const validateDocument = async () => {
     if (!file) return;
     setIsUploading(true);
@@ -129,42 +116,6 @@ export default function EnhancedDocumentValidator() {
       setError(err.message || 'Failed to validate document');
     } finally {
       setIsUploading(false);
-    }
-  };
-
-  const submitFeedback = async () => {
-    if (!feedback.trim()) return;
-    
-    setFeedbackSubmitting(true);
-    setFeedbackSuccess(false);
-    setFeedbackError(null);
-    
-    try {
-      const response = await fetch('/api/feedback', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          feedback,
-          documentType,
-          email: email || null
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || 'Failed to submit feedback');
-      }
-
-      setFeedbackSuccess(true);
-      setFeedback('');
-      setEmail('');
-    } catch (err) {
-      console.error('Error submitting feedback:', err);
-      setFeedbackError(err.message || 'Something went wrong');
-    } finally {
-      setFeedbackSubmitting(false);
     }
   };
 
@@ -291,11 +242,10 @@ export default function EnhancedDocumentValidator() {
           )}
         </div>
         
-        {/* Right side column for validation results and feedback */}
-        <div className="lg:col-span-5 flex flex-col gap-6">
-          {/* Validation Results Section - Right top */}
+        {/* Validation Results Section - Right side, full height */}
+        <div className="lg:col-span-5">
           <div 
-            className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-200 flex-grow"
+            className="bg-white p-6 rounded-lg shadow-sm border-l-4 border-blue-200 h-full"
           >
             
             {validationResult ? (
@@ -352,7 +302,7 @@ export default function EnhancedDocumentValidator() {
               </>
             ) : (
               // Empty state when no validation has been performed
-              <div className="mt-2 p-8 bg-gray-50 border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center min-h-[260px]">
+              <div className="p-8 bg-gray-50 border-2 border-dashed border-gray-300 rounded-md flex flex-col items-center justify-center h-full">
                 <div className="bg-blue-50 rounded-full p-4 mb-4">
                   <FileText className="h-14 w-14 text-blue-500" />
                 </div>
@@ -360,72 +310,6 @@ export default function EnhancedDocumentValidator() {
                 <p className="text-gray-600 text-center max-w-xs mb-4">
                   Your document validation results will appear here after you upload and validate a document.
                 </p>
-              </div>
-            )}
-          </div>
-          
-          {/* Feedback Section - Right bottom */}
-          <div className="bg-blue-50 p-6 rounded-lg shadow-sm border border-blue-200">
-            <h2 className="text-lg font-bold text-gray-800 mb-4">Share Your Feedback</h2>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Your Feedback</label>
-              <textarea
-                value={feedback}
-                onChange={handleFeedbackChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600 min-h-[60px]"
-                placeholder="Tell us about your experience or suggestions..."
-              />
-            </div>
-            
-            <div className="mb-4">
-              <label className="block text-sm font-medium text-gray-700 mb-1">Email (Optional)</label>
-              <input
-                type="email"
-                value={email}
-                onChange={handleEmailChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-gray-600"
-                placeholder="Your email for follow-up (optional)"
-              />
-            </div>
-            
-            <div className="flex justify-end">
-              <button
-                className={`px-4 py-2 rounded-md font-medium transition-colors ${
-                  feedback.trim() 
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white' 
-                    : 'bg-gray-200 text-gray-500 cursor-not-allowed'
-                }`}
-                onClick={submitFeedback}
-                disabled={!feedback.trim() || feedbackSubmitting}
-              >
-                {feedbackSubmitting ? (
-                  <div className="flex items-center">
-                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Submitting...
-                  </div>
-                ) : "Submit Feedback"}
-              </button>
-            </div>
-            
-            {feedbackSuccess && (
-              <div className="mt-3 p-2 bg-green-50 border border-green-200 rounded-md w-full">
-                <div className="flex items-center">
-                  <CheckCircle className="h-4 w-4 text-green-500 mr-2" />
-                  <p className="text-sm text-green-600">Thank you for your feedback!</p>
-                </div>
-              </div>
-            )}
-            
-            {feedbackError && (
-              <div className="mt-3 p-2 bg-red-50 border border-red-200 rounded-md w-full">
-                <div className="flex items-center">
-                  <AlertCircle className="h-4 w-4 text-red-500 mr-2" />
-                  <p className="text-sm text-red-600">{feedbackError}</p>
-                </div>
               </div>
             )}
           </div>
