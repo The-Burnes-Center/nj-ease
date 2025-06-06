@@ -124,89 +124,11 @@ export default function DocumentValidator() {
         return;
       }
       
-      // Show warning for large files
-      if (selectedFile.size > 4 * 1024 * 1024) { // 4MB threshold for chunked upload
-        console.log(`Large file detected: ${(selectedFile.size / 1024 / 1024).toFixed(2)}MB - Will use chunked upload`);
-      }
-      
       setFile(selectedFile);
       setFileName(selectedFile.name);
       setValidationResult(null);
       setError(null);
     }
-  };
-
-  // Chunked upload function for large files
-  const uploadFileInChunks = async (file, documentType, formFields) => {
-    const chunkSize = 4 * 1024 * 1024; // 4MB chunks
-    const totalChunks = Math.ceil(file.size / chunkSize);
-    const fileId = `${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-    
-    console.log(`Uploading ${file.name} in ${totalChunks} chunks`);
-    
-    // Upload chunks
-    for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
-      const start = chunkIndex * chunkSize;
-      const end = Math.min(start + chunkSize, file.size);
-      const chunk = file.slice(start, end);
-      
-      const chunkFormData = new FormData();
-      chunkFormData.append('chunk', chunk);
-      chunkFormData.append('chunkIndex', chunkIndex.toString());
-      chunkFormData.append('totalChunks', totalChunks.toString());
-      chunkFormData.append('fileName', file.name);
-      chunkFormData.append('fileId', fileId);
-      
-      const chunkResponse = await fetch('/api/upload-chunk', {
-        method: 'POST',
-        body: chunkFormData,
-      });
-      
-      if (!chunkResponse.ok) {
-        throw new Error(`Failed to upload chunk ${chunkIndex + 1}/${totalChunks}`);
-      }
-      
-      const chunkResult = await chunkResponse.json();
-      
-      // If upload is complete, process the file
-      if (chunkResult.complete) {
-        console.log('All chunks uploaded, processing document...');
-        
-        // Convert base64 back to ArrayBuffer for browser compatibility
-        const binaryString = atob(chunkResult.buffer);
-        const bytes = new Uint8Array(binaryString.length);
-        for (let i = 0; i < binaryString.length; i++) {
-          bytes[i] = binaryString.charCodeAt(i);
-        }
-        
-        // Create a new FormData for the validation API
-        const validationFormData = new FormData();
-        const reconstructedFile = new File([bytes.buffer], file.name, { type: file.type });
-        validationFormData.append('file', reconstructedFile);
-        validationFormData.append('documentType', documentType);
-        
-        // Add form fields to the request
-        Object.entries(formFields).forEach(([key, value]) => {
-          if (value) validationFormData.append(key, value);
-        });
-        
-        // Call the validation API
-        const validationResponse = await fetch('/api/validate-document', {
-          method: 'POST',
-          body: validationFormData,
-        });
-        
-        if (!validationResponse.ok) {
-          throw new Error(`Validation error: ${validationResponse.statusText}`);
-        }
-        
-        return await validationResponse.json();
-      }
-      
-      console.log(`Uploaded chunk ${chunkIndex + 1}/${totalChunks}`);
-    }
-    
-    throw new Error('File upload incomplete');
   };
 
   const handleFileChange = (e) => {
@@ -306,34 +228,28 @@ export default function DocumentValidator() {
     setError(null);
     
     try {
-      // Check if file is larger than 4MB and use chunked upload
-      if (file.size > 4 * 1024 * 1024) {
-        console.log('Using chunked upload for large file');
-        const result = await uploadFileInChunks(file, documentType, formFields);
-        setValidationResult(result);
-      } else {
-        // Use regular upload for smaller files
-        const formData = new FormData();
-        formData.append('file', file);
-        formData.append('documentType', documentType);
-        
-        // Add form fields to the request
-        Object.entries(formFields).forEach(([key, value]) => {
-          if (value) formData.append(key, value);
-        });
+      // Create form data for the file
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('documentType', documentType);
+      
+      // Add form fields to the request
+      Object.entries(formFields).forEach(([key, value]) => {
+        if (value) formData.append(key, value);
+      });
 
-        const response = await fetch('/api/validate-document', {
-          method: 'POST',
-          body: formData,
-        });
+      // Call your API route that will interface with Azure AI
+      const response = await fetch('/api/validate-document', {
+        method: 'POST',
+        body: formData,
+      });
 
-        if (!response.ok) {
-          throw new Error(`Error: ${response.statusText}`);
-        }
-
-        const result = await response.json();
-        setValidationResult(result);
+      if (!response.ok) {
+        throw new Error(`Error: ${response.statusText}`);
       }
+
+      const result = await response.json();
+      setValidationResult(result);
     } catch (err) {
       console.error('Error validating document:', err);
       setError(err.message || 'Failed to validate document');
