@@ -118,9 +118,9 @@ export default function DocumentValidator() {
         return;
       }
       
-      // Check file size (100MB limit to match backend)
-      if (selectedFile.size > 100 * 1024 * 1024) {
-        setError('File size must be less than 100MB. Large files may take up to 2 minutes to process.');
+      // Check file size (50MB limit)
+      if (selectedFile.size > 50 * 1024 * 1024) {
+        setError('File size must be less than 50MB');
         return;
       }
       
