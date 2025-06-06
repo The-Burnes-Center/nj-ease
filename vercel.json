@@ -1,0 +1,12 @@
+{
+  "functions": {
+    "app/api/validate-document/route.js": {
+      "maxDuration": 120
+    }
+  },
+  "build": {
+    "env": {
+      "NEXT_PUBLIC_MAX_FILE_SIZE": "104857600"
+    }
+  }
+} 

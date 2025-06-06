@@ -6,6 +6,10 @@ import { DocumentAnalysisClient, AzureKeyCredential } from "@azure/ai-form-recog
 const endpoint = process.env.DI_ENDPOINT;
 const key = process.env.DI_KEY;
 
+// Configure maximum request body size (100MB)
+export const maxDuration = 120; // 2 minutes for large file processing
+export const dynamic = 'force-dynamic';
+
 // Helper function to extract text from spans
 function* getTextOfSpans(content, spans) {
   for (const span of spans) {
@@ -141,9 +145,9 @@ function organizationNamesMatch(name1, name2) {
 
 export async function POST(request) {
   try {
-    // Set a timeout to abort if processing takes too long
+    // Set a timeout to abort if processing takes too long - increased for large files
     const timeoutPromise = new Promise((_, reject) => {
-      setTimeout(() => reject(new Error("Processing timeout")), 50000); // 50 second timeout
+      setTimeout(() => reject(new Error("Processing timeout")), 100000); // 100 second timeout (increased from 50)
     });
 
     // Main processing function
@@ -164,6 +168,14 @@ export async function POST(request) {
         );
       }
 
+      // Check file size (increased limit check)
+      if (file.size > 100 * 1024 * 1024) { // 100MB limit
+        return NextResponse.json(
+          { error: "File size must be less than 100MB" },
+          { status: 413 }
+        );
+      }
+
       // Convert the file into a Buffer
       const buffer = Buffer.from(await file.arrayBuffer());
       // Determine the file's content type
@@ -177,8 +189,16 @@ export async function POST(request) {
         contentType, 
       });
 
-      // Wait until the operation completes
-      const result = await poller.pollUntilDone();
+      // Wait until the operation completes with progress logging
+      let lastLogTime = Date.now();
+      const result = await poller.pollUntilDone({
+        onProgress: (state) => {
+          const now = Date.now();
+          if (now - lastLogTime > 10000) { // Log every 10 seconds
+            lastLogTime = now;
+          }
+        }
+      });
       
       // Safely destructure with defaults
       const {
@@ -242,10 +262,26 @@ export async function POST(request) {
     console.error("Error in document validation:", error);
     if (error.message === "Processing timeout") {
       return NextResponse.json(
-        { error: "Request timed out. Document processing took too long." },
+        { error: "Request timed out. Document processing took too long. For large files (>30MB), processing may take up to 2 minutes. Please try again or consider reducing file size." },
         { status: 504 }
       );
     }
+    
+    // Handle specific Azure Document Intelligence errors
+    if (error.code === 'InvalidRequest' && error.message?.includes('size')) {
+      return NextResponse.json(
+        { error: "File size is too large for processing. Please reduce file size and try again." },
+        { status: 413 }
+      );
+    }
+    
+    if (error.code === 'ServiceUnavailable' || error.code === 'TooManyRequests') {
+      return NextResponse.json(
+        { error: "Azure Document Intelligence service is currently busy. Please try again in a few moments." },
+        { status: 503 }
+      );
+    }
+    
     return NextResponse.json(
       { error: error.message || "Failed to validate document" },
       { status: 500 }

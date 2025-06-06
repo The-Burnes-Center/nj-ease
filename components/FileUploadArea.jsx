@@ -95,7 +95,7 @@ export default function FileUploadArea({
               <p className={`text-xs md:text-sm font-medium ${
                 isDarkMode ? 'text-gray-300' : 'text-gray-600'
               }`}>
-                PDF, DOCX, DOC, JPG, PNG (Max 50MB)
+                PDF, DOCX, DOC, JPG, PNG (Max 100MB)
               </p>
             </div>
           </>
