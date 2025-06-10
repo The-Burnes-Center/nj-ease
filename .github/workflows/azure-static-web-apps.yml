@@ -43,7 +43,7 @@ jobs:
           action: "upload"
           app_location: "/"
           api_location: ""
-          output_location: ".next"
+          output_location: "out"
         env:
           DI_ENDPOINT: ${{ secrets.DI_ENDPOINT }}
           DI_KEY: ${{ secrets.DI_KEY }}
