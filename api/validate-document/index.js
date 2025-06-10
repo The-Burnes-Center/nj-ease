@@ -1,6 +1,6 @@
-import { DocumentAnalysisClient, AzureKeyCredential } from "@azure/ai-form-recognizer";
-import multiparty from 'multiparty';
-import { readFileSync } from 'fs';
+const { DocumentAnalysisClient, AzureKeyCredential } = require("@azure/ai-form-recognizer");
+const multiparty = require('multiparty');
+const { readFileSync } = require('fs');
 
 // Configuration from environment variables
 const endpoint = process.env.DI_ENDPOINT;
@@ -1178,8 +1178,8 @@ const parseMultipartFormData = (req) => {
   });
 };
 
-// Main Azure Function handler using ES7 async/await
-export default async (context, req) => {
+// Main Azure Function handler using CommonJS
+module.exports = async (context, req) => {
   context.log('Validate document function processed a request.');
 
   // Enable CORS
