@@ -175,6 +175,21 @@ After the Static Web App is created:
 
 Your production site will be available at `https://<generated-name>.azurestaticapps.net`.
 
+#### GitHub Repository Secrets (CI/CD)
+
+If you rely on the **`azure-static-web-apps.yml`** workflow for CI/CD, make sure
+your GitHub repository has the following *Repository Secrets* configured
+(`Settings → Secrets → Actions`):
+
+| Secret name | Value |
+|-------------|-------|
+| `DI_ENDPOINT` | Same endpoint URL you added to Azure portal (e.g. `https://<resource>.cognitiveservices.azure.com/`) |
+| `DI_KEY` | Form Recognizer key (Key 1) |
+| `AZURE_STATIC_WEB_APPS_API_TOKEN` | *Deployment token* for the Static Web App (grab it from **Static Web App → Overview → Manage deployment token**). |
+
+These are injected into the workflow at build-time so the API function can be
+validated before deploying and to authorise the upload to Azure.
+
 ---
 
 ## 🧠 Core Modules
