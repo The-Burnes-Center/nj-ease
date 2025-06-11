@@ -669,7 +669,7 @@ function validateCertificateOfFormation(content, contentLower, pages, keyValuePa
   }
   
   // Check for required elements
-  if (!contentLower.includes("certificate of formation") || !contentLower.includes("short form standing") || !contentLower.includes("long form standing")) {
+  if (!contentLower.includes("certificate of formation") && !contentLower.includes("short form standing") && !contentLower.includes("long form standing")) {
     missingElements.push("Required keyword: 'Certificate of Formation'");
   }
   
