@@ -71,11 +71,11 @@ Azure AI Document Intelligence (formerly **Form Recognizer**) is the service tha
 1. Sign in to the [Azure portal](https://portal.azure.com/).
 2. Select **Create a resource** → **AI Services** → **Document Intelligence**.
 3. Fill in the required details:
-   • Subscription & Resource Group  
+   • **Subscription & Resource Group**
    • **Region**: Choose a supported region such as *East US*  
    • **Pricing tier**: **S0** (Standard)
 4. Click **Review + Create** and wait for deployment to complete.
-5. After deployment, open the resource and navigate to **Keys and Endpoint**.  
+5. After deployment, open the resource and navigate to **Keys and Endpoint**.
    Copy the **Endpoint URL** and **Key 1** – you will use them in the next step.
 
 #### Option B — Azure CLI
