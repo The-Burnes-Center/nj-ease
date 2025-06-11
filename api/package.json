@@ -2,16 +2,16 @@
   "name": "ai-document-validator-api",
   "version": "1.0.0", 
   "description": "Azure Functions API for AI Document Validator",
-  "main": "index.js",
+  "main": "validate-document/index.js",
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
     "@azure/ai-form-recognizer": "^5.0.0",
-    "multiparty": "^4.2.3"
+    "busboy": "^1.6.0"
   },
   "engines": {
-    "node": ">=20.0.0 <21.0.0"
+    "node": ">=18.0.0 <19.0.0"
   }
 } 

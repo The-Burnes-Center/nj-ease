@@ -1,6 +1,5 @@
 import { DocumentAnalysisClient, AzureKeyCredential } from "@azure/ai-form-recognizer";
-import multiparty from 'multiparty';
-import { readFileSync } from 'fs';
+import Busboy from 'busboy';
 
 // Configuration from environment variables
 const endpoint = process.env.DI_ENDPOINT;
@@ -1139,42 +1138,114 @@ function* getTextOfSpans(content, spans) {
   }
 }
 
-// Helper function to parse multipart form data
+// Helper function to parse multipart form data for Azure Functions
 const parseMultipartFormData = (req) => {
   return new Promise((resolve, reject) => {
-    const form = new multiparty.Form();
-    
-    form.parse(req, (err, fields, files) => {
-      if (err) {
-        reject(err);
+    try {
+      // Check if body is already parsed as JSON (for base64 encoded files)
+      if (req.body && typeof req.body === 'object' && req.body.file) {
+        const documentType = req.body.documentType || "tax-clearance-online";
+        const organizationName = req.body.organizationName || "";
+        const fein = req.body.fein || "";
+        
+        let file = null;
+        if (typeof req.body.file === 'string') {
+          // Base64 encoded file
+          file = {
+            data: Buffer.from(req.body.file, 'base64'),
+            type: req.body.fileType || 'application/octet-stream',
+            name: req.body.fileName || 'document'
+          };
+        } else if (req.body.file.data) {
+          // File object with data property
+          file = {
+            data: Buffer.from(req.body.file.data),
+            type: req.body.file.type || 'application/octet-stream',
+            name: req.body.file.name || 'document'
+          };
+        }
+        
+        if (!file) {
+          reject(new Error("Invalid file data format"));
+          return;
+        }
+        
+        resolve({
+          file,
+          documentType,
+          organizationName,
+          fein
+        });
         return;
       }
       
-      // Extract form fields
-      const documentType = fields.documentType?.[0] || "tax-clearance-online";
-      const organizationName = fields.organizationName?.[0] || "";
-      const fein = fields.fein?.[0] || "";
-      
-      // Extract file
-      const fileArray = files.file;
-      if (!fileArray || fileArray.length === 0) {
-        reject(new Error("No file provided"));
-        return;
+      // Handle multipart form data using busboy
+      if (req.rawBody || req.body) {
+        const contentType = req.headers['content-type'] || req.headers['Content-Type'];
+        
+        if (!contentType || !contentType.includes('multipart/form-data')) {
+          reject(new Error("Expected multipart/form-data content type"));
+          return;
+        }
+        
+        const busboy = Busboy({ headers: { 'content-type': contentType } });
+        const fields = {};
+        let fileData = null;
+        let fileInfo = {};
+        
+        busboy.on('field', (fieldname, val) => {
+          fields[fieldname] = val;
+        });
+        
+        busboy.on('file', (fieldname, file, info) => {
+          if (fieldname === 'file') {
+            fileInfo = info;
+            const chunks = [];
+            
+            file.on('data', (chunk) => {
+              chunks.push(chunk);
+            });
+            
+            file.on('end', () => {
+              fileData = Buffer.concat(chunks);
+            });
+          } else {
+            file.resume(); // Drain the file stream
+          }
+        });
+        
+        busboy.on('finish', () => {
+          if (!fileData) {
+            reject(new Error("No file provided"));
+            return;
+          }
+          
+          resolve({
+            file: {
+              data: fileData,
+              type: fileInfo.mimeType || 'application/octet-stream',
+              name: fileInfo.filename || 'document'
+            },
+            documentType: fields.documentType || "tax-clearance-online",
+            organizationName: fields.organizationName || "",
+            fein: fields.fein || ""
+          });
+        });
+        
+        busboy.on('error', (err) => {
+          reject(err);
+        });
+        
+        // Feed the raw body to busboy
+        const bodyBuffer = req.rawBody || Buffer.from(req.body);
+        busboy.write(bodyBuffer);
+        busboy.end();
+      } else {
+        reject(new Error("No valid request body found"));
       }
-      
-      const file = fileArray[0];
-      
-      resolve({
-        file: {
-          data: readFileSync(file.path),
-          type: file.headers['content-type'] || 'application/octet-stream',
-          name: file.originalFilename
-        },
-        documentType,
-        organizationName,
-        fein
-      });
-    });
+    } catch (error) {
+      reject(error);
+    }
   });
 };
 
