@@ -145,7 +145,7 @@ You can host both the Next.js front-end **and** the Azure Functions API under a 
 5. Build presets: choose **Custom** and use the following paths:
    - **App location**: `/`  
    - **API location**: `api`  
-   - **Output location**: `.next` (leave blank if using Next.js preset)
+   - **Output location**: `out` (leave blank if using Next.js preset)
 6. Review + Create – Azure will generate a GitHub Actions workflow (`azure-static-web-apps.yml`) that builds and deploys on every push.
 
 #### CLI Alternative
@@ -159,7 +159,7 @@ az staticwebapp create \
   --branch main \
   --app-location "./" \
   --api-location "api" \
-  --output-location ".next" \
+  --output-location "out" \
   --sku Free
 ```
 
