@@ -1,4 +1,17 @@
 'use client';
+/**
+ * ErrorMessage.jsx
+ * ----------------
+ * Lightweight helper component that standardises how errors are shown
+ * across the UI.  It remains invisible until an `error` string is passed
+ * in via props, allowing parent components to simply render it at any
+ * point in the view hierarchy without extra conditional logic.
+ *
+ * Props
+ * -----
+ * • error: string|null – when non-null the component shows the message.
+ * • isDarkMode: boolean – picks the appropriate colour palette.
+ */
 
 import { AlertCircle } from 'lucide-react';
 

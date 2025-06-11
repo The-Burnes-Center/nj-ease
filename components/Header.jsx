@@ -1,4 +1,17 @@
 'use client';
+/**
+ * Header.jsx
+ * ----------
+ * Displays the application title as a colourful gradient as well as a
+ * theme-toggle button.  It does not manage its own state; instead the
+ * dark/light state and its setter are injected from the parent so the
+ * header can be reused anywhere.
+ *
+ * Props
+ * -----
+ * • isDarkMode: boolean – current theme.
+ * • toggleTheme: () => void – flips the theme, implemented in parent.
+ */
 
 import { Moon, Sun } from 'lucide-react';
 

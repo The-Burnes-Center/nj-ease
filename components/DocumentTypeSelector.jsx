@@ -1,4 +1,19 @@
 'use client';
+/**
+ * DocumentTypeSelector.jsx
+ * ------------------------
+ * Drop-down (HTML <select>) that lets the user pick which document type
+ * they are about to upload.  The chosen value drives both UI behaviour
+ * (which additional form fields become required) and the backend
+ * validation logic.
+ *
+ * Props
+ * -----
+ * • documentType: string – currently selected value.
+ * • setDocumentType: (string) => void – state setter from parent.
+ * • documentTypes: { value: string; label: string }[] – list of options.
+ * • isDarkMode: boolean – theming flag for Tailwind classes.
+ */
 
 export default function DocumentTypeSelector({ 
   documentType, 

@@ -1,4 +1,29 @@
 'use client';
+/**
+ * ValidationResults.jsx
+ * ---------------------
+ * Responsible for rendering the outcome returned by the backend
+ * validator.  Adapts its UI based on 3 high-level situations:
+ *   1. No validation yet      → Placeholder encouraging user action
+ *   2. Validation failed      → Red themed panel listing missing elements
+ *   3. Validation succeeded   → Green themed panel with doc statistics
+ *
+ * Props
+ * -----
+ * • validationResult: {
+ *     missingElements?: string[];
+ *     suggestedActions?: string[];
+ *     documentInfo?: {
+ *        pageCount?: number;
+ *        wordCount?: number;
+ *        containsHandwriting?: boolean;
+ *     }
+ *   } | null
+ * • isDarkMode: boolean – toggles Tailwind class variants
+ *
+ * This component is intentionally pure / stateless, driven entirely by
+ * its props which makes it deterministic and easy to unit-test.
+ */
 
 import { CheckCircle, AlertCircle, FileText } from 'lucide-react';
 

@@ -1,4 +1,52 @@
 'use client';
+/**
+ * DocumentValidator.jsx
+ * ---------------------------------------------
+ * Top-level React (Next.js) component responsible for the entire
+ * "upload → validate → results" flow on the front-end of the
+ * AI-Document-Validator application.
+ *
+ * Responsibilities
+ * 1.  Provides the page layout, theming (light / dark) and responsive grid.
+ * 2.  Orchestrates all UI sub-components:
+ *     - Header
+ *     - DocumentTypeSelector
+ *     - FormFields
+ *     - FileUploadArea
+ *     - ValidationButton
+ *     - ErrorMessage
+ *     - ValidationResults
+ * 3.  Manages application state via React hooks:
+ *     • file / fileName                      – uploaded document reference
+ *     • isUploading                          – loading spinner flag
+ *     • validationResult                     – JSON returned from API
+ *     • error                                – human-readable error message
+ *     • documentType                         – selected doc-type option
+ *     • formFields / requiredFields          – dynamic form data + validation
+ *     • fieldErrors                          – per-field validation messages
+ *     • drag & drop state (isDragOver, …)    – UX niceties
+ *     • isDarkMode                           – user-/system-preferred theme
+ * 4.  Validates user input before making the /api/validate-document call.
+ * 5.  Converts the file into base64 so it can be transported as JSON.
+ *
+ * Network contract
+ * ---------------
+ * Expects POST /api/validate-document with the schema:
+ * {
+ *   file:           <string  – base64>,
+ *   documentType:   <string>,
+ *   fileType:       <string mime-type>,
+ *   fileName:       <string>,
+ *   organizationName?: <string>,
+ *   fein?:            <string>
+ * }
+ * and renders the response in the ValidationResults panel.
+ *
+ * NOTE:  Keep this component as a thin orchestrator – complex logic for
+ * file parsing / validation should live in the backend Azure Function
+ * (see api/validate-document/index.js).
+ * ---------------------------------------------
+ */
 
 import { useState, useEffect } from 'react';
 import Header from './Header';

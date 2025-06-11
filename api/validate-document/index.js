@@ -1,10 +1,71 @@
 import { DocumentAnalysisClient, AzureKeyCredential } from "@azure/ai-form-recognizer";
-
+/**
+ * validate-document (Azure Function)
+ * =================================
+ * Centralised backend logic responsible for analysing a user-supplied
+ * document using Azure Form Recognizer (a.k.a. "Document Intelligence")
+ * and determining whether the file satisfies the business rules for the
+ * requested `documentType`.
+ *
+ * Runtime
+ * -------
+ * • Node.js in an Azure Functions environment.
+ * • Trigger: HTTP(S) POST; see `function.json` for details.
+ *
+ * Required Environment Variables
+ * ------------------------------
+ * • DI_ENDPOINT : Azure Form Recognizer endpoint (e.g. https://<name>.cognitiveservices.azure.com)
+ * • DI_KEY      : API key authorised for the above endpoint.
+ *
+ * Request Schema (JSON)
+ * --------------------
+ * {
+ *   file:           string (base64-encoded binary of the document),
+ *   fileType:       string (Mime-type),
+ *   fileName:       string,
+ *   documentType:   string (one of the supported types below),
+ *   organizationName?: string,
+ *   fein?:            string
+ * }
+ *
+ * Supported documentType values
+ * -----------------------------
+ * tax-clearance-online | tax-clearance-manual | cert-alternative-name |
+ * cert-trade-name | cert-formation | cert-formation-independent |
+ * operating-agreement | cert-incorporation | irs-determination |
+ * bylaws | cert-authority
+ *
+ * High-Level Processing Flow
+ * --------------------------
+ * 1. Decode base64 payload & stream to Form Recognizer using the generic
+ *    `beginAnalyzeDocument` operation.
+ * 2. Extract *content*, *pages*, *tables*, *keyValuePairs*, *entities*,
+ *    and *formFields* from the returned analysis object for downstream
+ *    validation.
+ * 3. Delegate to a validation function that is specific to the chosen
+ *    documentType (e.g. `validateTaxClearanceOnline`). These pure helper
+ *    functions live in this file and return an object of the shape:
+ *    { missingElements: string[], suggestedActions: string[], documentInfo?: {...} }
+ * 4. The consolidated JSON is sent back to the front-end where it is
+ *    rendered in the `ValidationResults` panel.
+ *
+ * IMPORTANT:  This implementation purposefully keeps each validator
+ * isolated so that individual business rules can evolve without side
+ * effects.  When adding a new document type follow the existing pattern
+ * to preserve maintainability.
+ */
 // Configuration from environment variables
 const endpoint = process.env.DI_ENDPOINT;
 const key = process.env.DI_KEY;
 
-// Helper function to normalize organization names for better matching
+/**
+ * Normalizes an organization name (lower-case, trims whitespace, removes punctuation,
+ * and expands common legal-entity abbreviations such as LLC → "limited liability company").
+ * This allows fuzzy comparisons across differently formatted sources.
+ *
+ * @param {string} name  Raw organization name as it appears in the document/user input.
+ * @returns {string}     Sanitised, comparable string.
+ */
 function normalizeOrganizationName(name) {
   if (!name || typeof name !== 'string') return '';
   
@@ -48,7 +109,15 @@ function normalizeOrganizationName(name) {
   return normalized;
 }
 
-// Helper function to check if two organization names match (accounting for abbreviations)
+/**
+ * Compares two organisation names for equivalence while being tolerant to
+ * abbreviation/full-form mismatches (e.g. "Acme Inc." ⇔ "Acme Incorporated").
+ * Internally relies on `normalizeOrganizationName` and a few heuristics.
+ *
+ * @param {string} name1 First name to compare.
+ * @param {string} name2 Second name to compare.
+ * @returns {boolean}    True if the names are considered a match.
+ */
 function organizationNamesMatch(name1, name2) {
   if (!name1 || !name2) return false;
   
@@ -130,6 +199,26 @@ function organizationNamesMatch(name1, name2) {
   return false;
 }
 
+/**
+ * Routes the analysis results to a validator that is specific to the
+ * requested `documentType`.  Think of this as a dispatcher/switchboard.
+ * Each validator returns an object with `missingElements` and
+ * `suggestedActions` arrays (and sometimes additional metadata).
+ *
+ * @param {Object} options               Composite bag of properties.
+ * @param {string} options.documentType  One of the supported doc types
+ *                                       declared in the README.
+ * @param {string} options.content       Raw OCR text from Azure FR.
+ * @param {string} options.contentLower  Lower-cased variant (perf optimiser).
+ * @param {Array}  options.pages         Pages array from FR – used for stats.
+ * @param {Array}  options.languages     Language detection metadata.
+ * @param {Array}  options.styles        Style spans (used for handwriting).
+ * @param {Array}  options.tables        Detected tables (unused today).
+ * @param {Array}  options.keyValuePairs Key/value pairs (important!).
+ * @param {Array}  options.entities      Named entities (unused today).
+ * @param {Object} options.formFields    User-provided form context (org/FEIN).
+ * @returns {{missingElements:string[], suggestedActions:string[], detectedOrganizationName?:string}}
+ */
 function validateDocumentByType(options) {
   const { documentType, content, contentLower, pages, languages, styles, tables, keyValuePairs, entities, formFields } = options;
   
@@ -164,7 +253,24 @@ function validateDocumentByType(options) {
   }
 }
 
-// Validation for Tax Clearance Certificate (Online)
+/**
+ * Validates a Tax Clearance Certificate that was generated ONLINE via the
+ * NJ Division of Taxation portal.
+ *
+ * Rules enforced:
+ * • Presence of key phrases ("Clearance Certificate", Treasury, Division-of-Taxation, etc.)
+ * • Serial number check to ensure online issuance.
+ * • Organisation name and FEIN cross-check with user input.
+ * • Rejects certificates issued by disallowed agencies (e.g. DEP).
+ * • Ensures certificate date is ≤ 6 months old and includes authorised signature.
+ *
+ * @param {string}  content          OCR text returned by Form Recognizer.
+ * @param {string}  contentLower     Lower-cased `content` for cheap look-ups.
+ * @param {Array}   pages            Page objects (used for stats only).
+ * @param {Array}   keyValuePairs    K/V pairs extracted by FR.
+ * @param {{organizationName?:string, fein?:string}} formFields – user-supplied context.
+ * @returns {{missingElements:string[], suggestedActions:string[], detectedOrganizationName:string|null}}
+ */
 function validateTaxClearanceOnline(content, contentLower, pages, keyValuePairs, formFields) {
   const missingElements = [];
   const suggestedActions = [];
@@ -327,7 +433,18 @@ function validateTaxClearanceOnline(content, contentLower, pages, keyValuePairs,
   };
 }
 
-// Validation for Tax Clearance Certificate (Manual)
+/**
+ * Validates a manually generated Tax Clearance Certificate (BATC – Manual).
+ * Similar to the online variant but applies an additional "BATC Manual" rule
+ * and ignores online-specific serial number checks.
+ *
+ * @param {string}  content
+ * @param {string}  contentLower
+ * @param {Array}   pages
+ * @param {Array}   keyValuePairs
+ * @param {{organizationName?:string, fein?:string}} formFields
+ * @returns {{missingElements:string[], suggestedActions:string[], detectedOrganizationName:string|null}}
+ */
 function validateTaxClearanceManual(content, contentLower, pages, keyValuePairs, formFields) {
   const missingElements = [];
   const suggestedActions = [];
@@ -485,7 +602,15 @@ function validateTaxClearanceManual(content, contentLower, pages, keyValuePairs,
   };
 }
 
-// Validation for Certificate of Alternative Name
+/**
+ * Validates a Certificate of Alternative Name (a.k.a "Alternate Name").
+ *
+ * Rules:
+ * • Looks for 'Certificate of Alternate Name' or recognised equivalents.
+ * • Extracts organisation name immediately following the certificate title.
+ * • Requires Division of Revenue reference & Treasury date stamp.
+ * • Cross-checks detected organisation against user input.
+ */
 function validateCertificateAlternativeName(content, contentLower, pages, keyValuePairs, formFields) {
   const missingElements = [];
   const suggestedActions = [];
@@ -571,7 +696,15 @@ function validateCertificateAlternativeName(content, contentLower, pages, keyVal
   };
 }
 
-// Validation for Certificate of Formation
+/**
+ * Validates a Certificate of Formation or standing certificates derived
+ * from it (short/long form).
+ *
+ * Highlights:
+ * • Searches multiple known phrases to locate the entity name.
+ * • Verifies NJ Treasury / Division of Revenue issuance.
+ * • Requires signature, presence of date, and verification verbiage.
+ */
 function validateCertificateOfFormation(content, contentLower, pages, keyValuePairs, formFields) {
   const missingElements = [];
   const suggestedActions = [];
@@ -712,7 +845,12 @@ function validateCertificateOfFormation(content, contentLower, pages, keyValuePa
   };
 }
 
-// Validation for Certificate of Formation - Independent
+/**
+ * Validates a Certificate of Formation that was filed by an independent
+ * registered agent (variant used by some filers).
+ *
+ * Additional rule: cross-checks FEIN against org name substring if supplied.
+ */
 function validateCertificateOfFormationIndependent(content, contentLower, pages, keyValuePairs, formFields) {
   const missingElements = [];
   const suggestedActions = [];
@@ -792,7 +930,12 @@ function validateCertificateOfFormationIndependent(content, contentLower, pages,
   };
 }
 
-// Validation for Operating Agreement
+/**
+ * Validates an LLC Operating Agreement.
+ *
+ * Checks for: required title, member signatures, date, and New Jersey law
+ * reference.
+ */
 function validateOperatingAgreement(content, contentLower, pages, keyValuePairs, formFields) {
   const missingElements = [];
   const suggestedActions = [];
@@ -838,7 +981,10 @@ function validateOperatingAgreement(content, contentLower, pages, keyValuePairs,
   };
 }
 
-// Validation for Certificate of Incorporation
+/**
+ * Validates a Certificate of Incorporation. Current logic focuses on title
+ * presence and Board of Directors section.
+ */
 function validateCertificateOfIncorporation(content, contentLower, pages, keyValuePairs, formFields) {
   const missingElements = [];
   const suggestedActions = [];
@@ -872,7 +1018,10 @@ function validateCertificateOfIncorporation(content, contentLower, pages, keyVal
   };
 }
 
-// Validation for IRS Determination Letter
+/**
+ * Validates an IRS Determination Letter confirming 501(c)(3) or similar.
+ * Requires IRS letterhead and authorised signature.
+ */
 function validateIRSDeterminationLetter(content, contentLower, pages, keyValuePairs) {
   const missingElements = [];
   const suggestedActions = [];
@@ -901,7 +1050,10 @@ function validateIRSDeterminationLetter(content, contentLower, pages, keyValuePa
   };
 }
 
-// Validation for By-laws
+/**
+ * Validates By-laws documents. Ensures keyword presence and that at least
+ * one date exists to indicate version/adoption.
+ */
 function validateBylaws(content, contentLower, pages, keyValuePairs) {
   const missingElements = [];
   const suggestedActions = [];
@@ -924,7 +1076,10 @@ function validateBylaws(content, contentLower, pages, keyValuePairs) {
   };
 }
 
-// Validation for Certificate of Authority
+/**
+ * Validates a Certificate of Authority. Ensures NJ references,
+ * Division of Taxation mention, and detects organisation name for comparison.
+ */
 function validateCertificateOfAuthority(content, contentLower, pages, keyValuePairs, formFields) {
   const missingElements = [];
   const suggestedActions = [];
@@ -1017,7 +1172,10 @@ function validateCertificateOfAuthority(content, contentLower, pages, keyValuePa
   };
 }
 
-// Validation for Certificate of Trade Name
+/**
+ * Validates a Certificate of Trade Name – currently only keyword presence
+ * check with guidance for users.
+ */
 function validateCertificateOfTradeName(content, contentLower, pages, keyValuePairs) {
   const missingElements = [];
   const suggestedActions = [];
@@ -1034,7 +1192,17 @@ function validateCertificateOfTradeName(content, contentLower, pages, keyValuePa
   };
 }
 
-// Helper function to check if a date in the document is within the last 6 months
+/**
+ * Checks whether the supplied document contains at least one date that is
+ * within the last 6 months. Used by several validators to ensure the
+ * certificate is current.
+ *
+ * NOTE: This function purposefully limits regex matches to a small number
+ * to keep performance acceptable for very large documents.
+ *
+ * @param {string} content OCR-extracted full text of the document.
+ * @returns {boolean}      True if a qualifying date is found.
+ */
 function checkDateWithinSixMonths(content) {
   // Early exit if content is too short
   if (!content || content.length < 10) return false;
@@ -1131,7 +1299,14 @@ function checkDateWithinSixMonths(content) {
   return false;
 }
 
-// Helper function to check if any date is present in the document
+/**
+ * Lightweight date existence check – looks for *any* plausible date in the
+ * document without enforcing the 6-month window. Primarily used by bylaws
+ * and formation certificates.
+ *
+ * @param {string} content OCR-extracted text.
+ * @returns {boolean}      True if at least one date-like pattern is found.
+ */
 function checkForDatePresence(content) {
   // Early exit if content is too short
   if (!content || content.length < 10) return false;
@@ -1193,7 +1368,15 @@ function* getTextOfSpans(content, spans) {
   }
 }
 
-// Helper function to parse request data (simplified for base64 only)
+/**
+ * Parses the HTTP request body (JSON) and returns a normalised object that
+ * contains the binary `file` buffer and meta-data fields. Performs basic
+ * validation (presence & base64 correctness) and surfaces meaningful
+ * error messages so that the caller can respond with 4xx codes.
+ *
+ * @param {import('@azure/functions').HttpRequest} req
+ * @returns {Promise<{file:{data:Buffer,type:string,name:string},documentType:string,organizationName:string,fein:string}>}
+ */
 const parseRequestData = (req) => {
   return new Promise((resolve, reject) => {
     try {
@@ -1238,7 +1421,15 @@ const parseRequestData = (req) => {
   });
 };
 
-// Main Azure Function handler using ES7 async/await
+/**
+ * Azure Functions HTTP trigger entry-point. Handles CORS, validates environment
+ * variables, streams the file to Azure Form Recognizer, delegates business-rule
+ * checks, and returns a JSON result to the caller.
+ *
+ * @param {import('@azure/functions').Context} context  Function runtime context.
+ * @param {import('@azure/functions').HttpRequest} req  Incoming HTTP request.
+ * @returns {Promise<void>}                            Response is written via `context.res`.
+ */
 export default async (context, req) => {
   context.log('Validate document function processed a request.');
 

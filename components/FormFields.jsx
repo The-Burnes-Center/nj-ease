@@ -1,4 +1,24 @@
 'use client';
+/**
+ * FormFields.jsx
+ * --------------
+ * Dynamically renders additional text-input fields that are required for
+ * certain document types (currently Organisation Name + FEIN).  The set
+ * of required fields is dictated by the parent component to keep the
+ * logic centralised.
+ *
+ * Props
+ * -----
+ * • requiredFields: { organizationName: boolean; fein: boolean }
+ *     Determines which inputs are shown.
+ * • formFields:     { organizationName: string; fein: string }
+ *     Controlled values for the inputs.
+ * • handleInputChange: (SyntheticEvent) => void
+ *     Bubble-up change handler (lifts state to parent).
+ * • fieldErrors:    { organizationName?: string; fein?: string }
+ *     Inline validation error messages.
+ * • isDarkMode: boolean – theme switcher.
+ */
 
 export default function FormFields({ 
   requiredFields, 
