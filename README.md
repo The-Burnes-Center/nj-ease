@@ -1,6 +1,6 @@
-# 📄 NJ EASE (Entrepreneurial Application Screening Engine)
+# 📌 NJ EASE (Entrepreneurial Application Screening Engine)
 
-> _An AI document validation application that automatically validates business documents using Azure AI Form Recognizer and extracts key information for compliance verification._
+> AI-powered web application that instantly verifies New Jersey business documents to accelerate incentive eligibility checks for the New Jersey Economic Development Authority (NJEDA).
 
 ---
 
@@ -8,168 +8,232 @@
 
 ![Demo GIF](./demo.gif)
 
-> _Upload your business documents and get instant validation results with AI-powered analysis._
-
 ---
 
 ## 🧠 What It Does
 
-- 📋 **Multi-Document Validation**: Supports 11+ business document types  
-  Validates Tax Clearance Certificates, Formation Documents, Operating Agreements, and more with intelligent field extraction.
-
-- 🤖 **AI-Powered Analysis**: Azure Form Recognizer integration  
-  Uses advanced OCR and machine learning to extract and validate document fields automatically with 95%+ accuracy.
-
-- 🎨 **Modern UI/UX**: Drag-and-drop interface with real-time feedback  
-  Dark/light theme support, responsive design, and intuitive document upload experience.
+- 📄 **Multi-Document Support** – Validate Tax Clearance Certificates, Certificates of Formation/Incorporation, Operating Agreements, IRS Determination Letters, and more.
+- 🖱️ **Drag-and-Drop Upload** – Drop a file up to 50 MB (PDF, DOCX, DOC, TXT, PNG, JPG, JPEG) or browse from your device.
+- 🔍 **AI-Powered Extraction** – Uses Azure AI Document Intelligence (Form Recognizer) to extract text, tables, key–value pairs, and detect handwriting.
+- ✅ **Rule-Based Verification** – Custom logic checks for required fields (organisation name, FEIN, dates < 6 months, official seals, signatures, etc.) and flags anything missing.
+- 🌗 **Dark / Light Theme** – One-click toggle with preference saved to `localStorage`.
+- ⚡ **Instant Feedback** – Results returned as JSON and rendered in a human-friendly checklist with suggested next steps if the document fails.
 
 ---
 
 ## 🧱 Architecture
 
-- Document validation workflow with Azure AI Form Recognizer integration
-- Real-time processing with Next.js API routes and React components
-- Example flow:
-
-```
-[Document Upload] → [File Validation] → [Azure AI Analysis] → [Field Extraction] → [Compliance Check] → [Results Display]
+```text
+[Document Upload] → [Azure AI Document Intelligence Analysis] → [Field Extraction] → [Document Validation] → [Frontend Display]
 ```
 
 ---
 
 ## 🧰 Tech Stack
 
-| Layer          | Tools & Frameworks                                      |
-|----------------|---------------------------------------------------------|
-| **Frontend**   | Next.js 15, React 19, Tailwind CSS 4, Lucide Icons    |
-| **Backend**    | Next.js API Routes, Azure AI Form Recognizer 5.0       |
-| **AI/ML**      | Azure AI Form Recognizer, Document Intelligence         |
-| **DevOps**     | Vercel, ESLint, Turbopack                              |
+| Layer         | Tools & Frameworks                                          |
+|---------------|-------------------------------------------------------------|
+| **Frontend**  | Next.js 15, Tailwind CSS 4, Lucide Icons                    |
+| **Backend**   | Azure Functions (Node 18)                                   |
+| **AI/ML**     | Azure AI Document Intelligence (Form Recognizer v5 SDK)     |
+| **Infra**     | Azure Static Web Apps, GitHub Actions (CI)                  |
 
 ---
 
-## 🧪 Setup
+## 🧪 Local Setup
+
+### Prerequisites
+
+1. **Node.js 18.x** (verify with `node -v`)
+2. **npm** (bundled with Node) or **pnpm/yarn**
+3. **Azure Functions Core Tools v4** – install via `npm i -g azure-functions-core-tools@4 --unsafe-perm true`.
+
+### 1. Clone & Install Dependencies
 
 ```bash
-# Clone the repo
-git clone https://github.com/your-username/ai-document-validator.git
-cd ai-document-validator
+# Clone
+$ git clone https://github.com/kaushik-manivannan/ai-document-validator.git
+$ cd ai-document-validator
 
-# Install dependencies
-npm install
+# Install front-end dependencies
+$ npm install
 
-# Set up environment variables
-cp .env.example .env.local
-
-# Run locally
-npm run dev
+# Install API dependencies
+$ cd api && npm install && cd ..
 ```
 
-**Environment Variables (.env.local):**
-```env
-# Required: Azure AI Form Recognizer
-DI_ENDPOINT=your-azure-form-recognizer-endpoint
-DI_KEY=your-azure-form-recognizer-key
+### 2. Create Azure AI Document Intelligence Resource
+
+Azure AI Document Intelligence (formerly **Form Recognizer**) is the service that extracts structured data from your uploaded documents.
+
+#### Option A — Azure Portal
+
+1. Sign in to the [Azure portal](https://portal.azure.com/).
+2. Select **Create a resource** → **AI Services** → **Document Intelligence**.
+3. Fill in the required details:
+   • Subscription & Resource Group  
+   • **Region**: Choose a supported region such as *East US*  
+   • **Pricing tier**: **S0** (Standard)
+4. Click **Review + Create** and wait for deployment to complete.
+5. After deployment, open the resource and navigate to **Keys and Endpoint**.  
+   Copy the **Endpoint URL** and **Key 1** – you will use them in the next step.
+
+#### Option B — Azure CLI
+
+```bash
+# Create a resource group (skip if it already exists)
+az group create --name my-rg --location eastus
+
+# Create the Document Intelligence (Form Recognizer) resource
+az cognitiveservices account create \
+  --name my-docintel \
+  --resource-group my-rg \
+  --location eastus \
+  --kind FormRecognizer \
+  --sku S0 \
+  --yes
+
+# Retrieve endpoint and key
+az cognitiveservices account show  -n my-docintel -g my-rg --query "properties.endpoint" -o tsv
+az cognitiveservices account keys list -n my-docintel -g my-rg --query "key1" -o tsv
 ```
+
+Save the **endpoint** and **key** values; you will paste them into `api/local.settings.json` in the next step.
+
+### 3. Configure Environment Variables
+
+The validator needs credentials for Azure Document Intelligence.
+
+Create an `api/local.settings.json` file for the API.
+
+`api/local.settings.json` example:
+
+```json
+{
+  "IsEncrypted": false,
+  "Values": {
+    "FUNCTIONS_WORKER_RUNTIME": "node",
+    "AzureWebJobsStorage": "UseDevelopmentStorage=true",
+    "DI_ENDPOINT": "https://<your-resource>.cognitiveservices.azure.com/",
+    "DI_KEY": "<your-ai-document-intelligence-key>"
+  }
+}
+```
+
+### 4. Run Locally
+
+```bash
+# Terminal 1 – start Azure Functions on http://localhost:7071
+$ cd api && func start
+
+# Terminal 2 – start Next.js dev server on http://localhost:3000
+$ npm run dev
+```
+
+Open http://localhost:3000, upload a sample PDF, and click **Validate Document**.
+
+### 5. Deploy to Azure Static Web Apps
+
+You can host both the Next.js front-end **and** the Azure Functions API under a single Static Web App.
+
+#### Quick Deploy from the Azure Portal
+
+1. In the [Azure portal](https://portal.azure.com/), click **Create a resource** → **Static Web Apps**.
+2. Fill in the **Basics** tab (subscription, resource group, name, region).
+3. Under **Deployment details**, choose **GitHub** and authorise your account.
+4. Select the repository **`<your-name>/ai-document-validator`** and the branch you want to deploy (e.g. `main`).
+5. Build presets: choose **Custom** and use the following paths:
+   - **App location**: `/`  
+   - **API location**: `api`  
+   - **Output location**: `.next` (leave blank if using Next.js preset)
+6. Review + Create – Azure will generate a GitHub Actions workflow (`azure-static-web-apps.yml`) that builds and deploys on every push.
+
+#### CLI Alternative
+
+```bash
+az staticwebapp create \
+  --name nj-ease \
+  --resource-group my-rg \
+  --source https://github.com/<your-name>/ai-document-validator \
+  --location eastus \
+  --branch main \
+  --app-location "./" \
+  --api-location "api" \
+  --output-location ".next" \
+  --sku Free
+```
+
+#### Configure Production Environment Variables
+
+After the Static Web App is created:
+
+1. Go to your Static Web App resource → **Settings** → **Environment Variables**.
+2. Add the following **Environment Variabes** (make sure they match the keys you created earlier):
+   - `DI_ENDPOINT`
+   - `DI_KEY`
+3. Click **Save** which triggers a new deployment.
+
+Your production site will be available at `https://<generated-name>.azurestaticapps.net`.
 
 ---
 
-## 🧠 Core Components
+## 🧠 Core Modules
 
-| Component                   | Description                                                                 |
-|-----------------------------|-----------------------------------------------------------------------------|
-| `DocumentValidator.jsx`     | Main validation orchestrator with state management and workflow control     |
-| `FileUploadArea.jsx`        | Drag-and-drop file upload with validation and preview functionality         |
-| `ValidationResults.jsx`     | AI analysis results display with extracted fields and compliance status     |
-| `DocumentTypeSelector.jsx`  | Smart document type selection with dynamic field requirements               |
-| `FormFields.jsx`            | Dynamic form generation based on document type requirements                 |
-| `ValidationButton.jsx`      | Validation trigger with loading states and progress indicators              |
-| `Header.jsx`                | Application header with theme toggle and branding                           |
-| `ErrorMessage.jsx`          | Error display component for user feedback                                   |
+| Path                                    | Purpose                                                                 |
+|-----------------------------------------|-------------------------------------------------------------------------|
+| `components/DocumentValidator.jsx`      | Root UI component orchestrating validation flow                         |
+| `api/validate-document/index.js`        | Azure Function – parses request, calls Form Recognizer, runs validation |
+| `components/FileUploadArea.jsx`         | Drag-and-drop & file picker UI                                          |
+| `components/ValidationResults.jsx`      | Renders pass/fail states, issues found & suggested actions              |
+| `components/FormFields.jsx`             | User input fields for Organization Name & FEIN                          |
 
 ---
 
-## 🔄 Document Processing Flow
+## 🌍 Validation Flow (per Document)
 
-> _Multi-step validation process with AI-powered analysis._
-
-1. 📤 **Upload Handler** → Validates file type, size (50MB max), and format compatibility  
-2. 🔍 **Azure AI Analysis** → Extracts text and structure using prebuilt-document model  
-3. ✅ **Field Validation** → Compares extracted data against expected document fields  
-4. 📊 **Results Generation** → Generates comprehensive validation report with confidence scores  
-5. 💬 **User Feedback** → Displays validation results with detailed field-by-field analysis
+1. User selects a **Document Type** and uploads the file.
+2. App encodes file → base64 JSON → `POST /api/validate-document`.
+3. Azure Function streams file to **Azure AI Document Intelligence** (`prebuilt-document`).
+4. Extracted text/tables are checked by **rule sets** (e.g. `validateTaxClearanceOnline`).
+5. Response `{ success, missingElements, suggestedActions, documentInfo }` is sent back.
+6. Once validation is complete, UI shows a green check-mark ✅ or a red banner 🚫 with details.
 
 ---
 
 ## 🛡️ Security & Privacy
 
-- All documents processed in-memory, no permanent file storage
-- Azure AI Form Recognizer handles data processing with enterprise-grade security
-- Client-side file validation before upload (PDF, DOCX, DOC, TXT, PNG, JPG, JPEG)
-- Environment variables for secure API key management
-- 50-second processing timeout to prevent resource exhaustion
+- Documents are processed **in-memory only** – nothing is written to disk.
+- No document data is persisted once the request completes.
+- API is CORS-enabled but can be locked down to authenticated roles via Azure Static Web Apps config.
+- Secrets (Azure keys) are stored in environment variables.
 
 ---
 
-## 📋 Supported Document Types
+## 📦 Roadmap
 
-| Document Type | Required Fields | Validation Features |
-|---------------|----------------|-------------------|
-| Tax Clearance Certificate (Online) | Organization Name, FEIN | Automated field matching with fuzzy logic |
-| Tax Clearance Certificate (Manual) | Organization Name, FEIN | Manual format recognition and validation |
-| Certificate of Formation | Organization Name | Entity formation document verification |
-| Certificate of Formation - Independent | Organization Name | Independent entity validation |
-| Certificate of Incorporation | Organization Name | Corporate structure validation |
-| Operating Agreement | Organization Name | LLC governance document verification |
-| IRS Determination Letter | None | Non-profit status verification |
-| Certificate of Authority | Organization Name | Foreign entity authorization |
-| Certificate of Alternative Name | Organization Name | DBA registration validation |
-| Certificate of Trade Name | None | Business name registration |
-| By-laws | None | Corporate governance rules verification |
-
-**File Support**: PDF, DOCX, DOC, TXT, PNG, JPG, JPEG (up to 50MB)  
-**Processing Time**: ~2-5 seconds per document  
-**Accuracy**: 95%+ field extraction accuracy with Azure AI
-
----
-
-## 📦Superior Features
-
-- **Smart Organization Name Matching**: Advanced fuzzy logic for matching organization names with abbreviations (LLC ↔ Limited Liability Company)
-- **Date Validation**: Automatic date extraction and validation for time-sensitive documents
-- **Theme Support**: Dark/light mode with system preference detection
-- **Responsive Design**: Mobile-first approach with optimized layouts for all screen sizes
-- **Real-time Validation**: Instant feedback during form filling and file upload
-- **Drag & Drop**: Intuitive file upload with visual feedback
-
----
-
-## 🚀 Roadmap
-
-- [ ] Implement batch document processing
+- [ ] Plug-in additional LLM summarisation of failed checks
+- [ ] Export validation report as PDF
+- [ ] Batch upload documents
 
 ---
 
 ## 🤝 Contributing
 
-Pull requests are welcome! For major changes, please open an issue first to discuss proposed modifications.
+Pull requests are welcome! Please open an issue to discuss your changes before starting major work.
 
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/amazing-feature`)
-3. Commit changes (`git commit -m 'Add amazing feature'`)
-4. Push to branch (`git push origin feature/amazing-feature`)
-5. Open a Pull Request
+1. Fork the repo & create a new branch.
+2. Follow the local setup above.
+3. Test the code
+4. Open a pull request describing your changes.
 
 ---
 
 ## 📄 License
 
-MIT License – see `LICENSE.md` for details.
+MIT License – see [`LICENSE.md`](./LICENSE.md) for details.
 
 ---
 
 ## 👥 Authors & Acknowledgements
 
-- Built by **Kaushik Manivannan** & **Aarushi Thejaswi**
-- Powered by **Azure AI Form Recognizer**  
-- Inspired by the need for automated document compliance in NJEDA's business operations
+Built by **Kaushik Manivannan & Aarushi Thejaswi** for the **New Jersey Economic Development Authority**.
