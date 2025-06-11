@@ -211,6 +211,20 @@ export default function DocumentValidator() {
     return isValid;
   };
 
+  // Helper function to convert file to base64
+  const fileToBase64 = (file) => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.readAsDataURL(file);
+      reader.onload = () => {
+        // Remove data:mime/type;base64, prefix to get pure base64
+        const base64 = reader.result.split(',')[1];
+        resolve(base64);
+      };
+      reader.onerror = error => reject(error);
+    });
+  };
+
   const validateDocument = async () => {
     // Check if file is uploaded
     if (!file) {
@@ -228,24 +242,30 @@ export default function DocumentValidator() {
     setError(null);
     
     try {
-      // Create form data for the file
-      const formData = new FormData();
-      formData.append('file', file);
-      formData.append('documentType', documentType);
+      // Convert file to base64
+      const base64File = await fileToBase64(file);
       
-      // Add form fields to the request
-      Object.entries(formFields).forEach(([key, value]) => {
-        if (value) formData.append(key, value);
-      });
+      // Create JSON payload with base64 encoded file
+      const payload = {
+        file: base64File,
+        documentType: documentType,
+        fileType: file.type,
+        fileName: file.name,
+        ...formFields // Spread the form fields (organizationName, fein)
+      };
 
-      // Call your API route that will interface with Azure AI
+      // Call your API route with JSON payload
       const response = await fetch('/api/validate-document', {
         method: 'POST',
-        body: formData,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(payload),
       });
 
       if (!response.ok) {
-        throw new Error(`Error: ${response.statusText}`);
+        const errorData = await response.json().catch(() => null);
+        throw new Error(errorData?.error || `Error: ${response.statusText}`);
       }
 
       const result = await response.json();

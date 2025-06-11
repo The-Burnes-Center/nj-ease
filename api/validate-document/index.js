@@ -1,5 +1,4 @@
 import { DocumentAnalysisClient, AzureKeyCredential } from "@azure/ai-form-recognizer";
-import Busboy from 'busboy';
 
 // Configuration from environment variables
 const endpoint = process.env.DI_ENDPOINT;
@@ -1138,111 +1137,45 @@ function* getTextOfSpans(content, spans) {
   }
 }
 
-// Helper function to parse multipart form data for Azure Functions
-const parseMultipartFormData = (req) => {
+// Helper function to parse request data (simplified for base64 only)
+const parseRequestData = (req) => {
   return new Promise((resolve, reject) => {
     try {
-      // Check if body is already parsed as JSON (for base64 encoded files)
-      if (req.body && typeof req.body === 'object' && req.body.file) {
-        const documentType = req.body.documentType || "tax-clearance-online";
-        const organizationName = req.body.organizationName || "";
-        const fein = req.body.fein || "";
-        
-        let file = null;
-        if (typeof req.body.file === 'string') {
-          // Base64 encoded file
-          file = {
-            data: Buffer.from(req.body.file, 'base64'),
-            type: req.body.fileType || 'application/octet-stream',
-            name: req.body.fileName || 'document'
-          };
-        } else if (req.body.file.data) {
-          // File object with data property
-          file = {
-            data: Buffer.from(req.body.file.data),
-            type: req.body.file.type || 'application/octet-stream',
-            name: req.body.file.name || 'document'
-          };
-        }
-        
-        if (!file) {
-          reject(new Error("Invalid file data format"));
-          return;
-        }
-        
-        resolve({
-          file,
-          documentType,
-          organizationName,
-          fein
-        });
+      // Expect JSON body with base64 encoded file
+      if (!req.body || typeof req.body !== 'object') {
+        reject(new Error("Expected JSON request body"));
         return;
       }
-      
-      // Handle multipart form data using busboy
-      if (req.rawBody || req.body) {
-        const contentType = req.headers['content-type'] || req.headers['Content-Type'];
-        
-        if (!contentType || !contentType.includes('multipart/form-data')) {
-          reject(new Error("Expected multipart/form-data content type"));
-          return;
-        }
-        
-        const busboy = Busboy({ headers: { 'content-type': contentType } });
-        const fields = {};
-        let fileData = null;
-        let fileInfo = {};
-        
-        busboy.on('field', (fieldname, val) => {
-          fields[fieldname] = val;
-        });
-        
-        busboy.on('file', (fieldname, file, info) => {
-          if (fieldname === 'file') {
-            fileInfo = info;
-            const chunks = [];
-            
-            file.on('data', (chunk) => {
-              chunks.push(chunk);
-            });
-            
-            file.on('end', () => {
-              fileData = Buffer.concat(chunks);
-            });
-          } else {
-            file.resume(); // Drain the file stream
-          }
-        });
-        
-        busboy.on('finish', () => {
-          if (!fileData) {
-            reject(new Error("No file provided"));
-            return;
-          }
-          
-          resolve({
-            file: {
-              data: fileData,
-              type: fileInfo.mimeType || 'application/octet-stream',
-              name: fileInfo.filename || 'document'
-            },
-            documentType: fields.documentType || "tax-clearance-online",
-            organizationName: fields.organizationName || "",
-            fein: fields.fein || ""
-          });
-        });
-        
-        busboy.on('error', (err) => {
-          reject(err);
-        });
-        
-        // Feed the raw body to busboy
-        const bodyBuffer = req.rawBody || Buffer.from(req.body);
-        busboy.write(bodyBuffer);
-        busboy.end();
-      } else {
-        reject(new Error("No valid request body found"));
+
+      const { file, documentType, organizationName, fein, fileType, fileName } = req.body;
+
+      if (!file || typeof file !== 'string') {
+        reject(new Error("Missing or invalid file data. Expected base64 string."));
+        return;
       }
+
+      // Decode base64 file
+      let fileBuffer;
+      try {
+        fileBuffer = Buffer.from(file, 'base64');
+      } catch (decodeError) {
+        reject(new Error("Invalid base64 file data"));
+        return;
+      }
+
+      const fileData = {
+        data: fileBuffer,
+        type: fileType || 'application/pdf',
+        name: fileName || 'document'
+      };
+
+      resolve({
+        file: fileData,
+        documentType: documentType || "tax-clearance-online",
+        organizationName: organizationName || "",
+        fein: fein || ""
+      });
+
     } catch (error) {
       reject(error);
     }
@@ -1258,7 +1191,8 @@ export default async (context, req) => {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Methods': 'POST, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Headers': 'Content-Type, Authorization',
+      'Content-Type': 'application/json'
     }
   };
 
@@ -1288,7 +1222,7 @@ export default async (context, req) => {
     // Main processing function
     const processingPromise = async () => {
       // Parse the multipart form data
-      const { file, documentType, organizationName, fein } = await parseMultipartFormData(req);
+      const { file, documentType, organizationName, fein } = await parseRequestData(req);
       
       if (!file) {
         context.res = {
