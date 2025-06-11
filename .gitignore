@@ -220,3 +220,8 @@ dist
 .svelte-kit
 
 # End of https://www.toptal.com/developers/gitignore/api/nextjs,git,macos,node
+
+# Azure Functions
+local.settings.json
+bin/
+obj/
