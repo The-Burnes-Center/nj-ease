@@ -1178,7 +1178,7 @@ const parseMultipartFormData = (req) => {
   });
 };
 
-// Main Azure Function handler - simplified for debugging
+// Main Azure Function handler using CommonJS
 module.exports = async (context, req) => {
   context.log('Validate document function processed a request.');
 
@@ -1198,57 +1198,125 @@ module.exports = async (context, req) => {
   }
 
   try {
-    // Test 1: Basic function execution
-    context.log('Function started successfully');
-
-    // Test 2: Environment variables
-    context.log('DI_ENDPOINT exists:', !!endpoint);
-    context.log('DI_KEY exists:', !!key);
-    
+    // Validate environment variables
     if (!endpoint || !key) {
-      context.log.error('Missing environment variables');
+      context.log.error('Missing required environment variables: DI_ENDPOINT or DI_KEY');
       context.res = {
         ...context.res,
         status: 500,
-        body: { 
-          error: "Missing environment variables",
-          details: {
-            hasEndpoint: !!endpoint,
-            hasKey: !!key
-          }
-        }
+        body: { error: "Server configuration error: Missing Document Intelligence credentials" }
       };
       return;
     }
 
-    // Test 3: Request inspection
-    context.log('Request method:', req.method);
-    context.log('Content-Type:', req.headers['content-type']);
-    
-    // Return success for now - we'll add complexity back step by step
-    context.res = {
-      ...context.res,
-      status: 200,
-      body: {
-        message: "Function is working!",
-        debug: {
-          hasEndpoint: !!endpoint,
-          hasKey: !!key,
-          method: req.method,
-          contentType: req.headers['content-type']
-        }
+    // Set a timeout to abort if processing takes too long
+    const timeoutPromise = new Promise((_, reject) => {
+      setTimeout(() => reject(new Error("Processing timeout")), 50000); // 50 second timeout
+    });
+
+    // Main processing function
+    const processingPromise = async () => {
+      // Parse the multipart form data
+      const { file, documentType, organizationName, fein } = await parseMultipartFormData(req);
+      
+      if (!file) {
+        context.res = {
+          ...context.res,
+          status: 400,
+          body: { error: "No file provided" }
+        };
+        return;
       }
+
+      // Convert the file into a Buffer
+      const buffer = Buffer.from(file.data);
+      const contentType = file.type || "application/octet-stream";
+
+      // Create the Document Intelligence Client
+      const client = new DocumentAnalysisClient(endpoint, new AzureKeyCredential(key));
+
+      // Analyze the document - using prebuilt-document for more advanced structure analysis
+      const poller = await client.beginAnalyzeDocument("prebuilt-document", buffer, {
+        contentType, 
+      });
+
+      // Wait until the operation completes
+      const result = await poller.pollUntilDone();
+      
+      // Safely destructure with defaults
+      const {
+        content = "",
+        pages = [],
+        languages = [],
+        styles = [],
+        tables = [],
+        keyValuePairs = [],
+        entities = [],
+      } = result;
+
+      // Pre-process lowercase content to avoid repeated toLowerCase() calls
+      const contentLower = content.toLowerCase();
+
+      // Validate based on document type
+      const validationResults = validateDocumentByType({
+        documentType,
+        content,
+        contentLower,
+        pages,
+        languages,
+        styles,
+        tables,
+        keyValuePairs,
+        entities,
+        formFields: {
+          organizationName,
+          fein
+        }
+      });
+
+      // Prepare document info
+      const documentInfo = {
+        pageCount: pages.length,
+        wordCount: pages.reduce((sum, page) => sum + (page.words ? page.words.length : 0), 0),
+        languageInfo: languages.map(lang => ({
+          languageCode: lang.languageCode,
+          confidence: lang.confidence
+        })),
+        containsHandwriting: styles.some(style => style.isHandwritten),
+        documentType,
+        detectedOrganizationName: validationResults.detectedOrganizationName || null
+      };
+
+      context.res = {
+        ...context.res,
+        status: 200,
+        body: {
+          success: validationResults.missingElements.length === 0,
+          missingElements: validationResults.missingElements,
+          suggestedActions: validationResults.suggestedActions || [],
+          documentInfo,
+          organizationNameMatches: !validationResults.missingElements.some(
+            element => element.includes("Organization name doesn't match")
+          )
+        }
+      };
     };
 
+    // Race between processing and timeout
+    await Promise.race([processingPromise(), timeoutPromise]);
+
   } catch (error) {
-    context.log.error("Error in function:", error);
+    context.log.error("Error in document validation:", error);
+    
+    const statusCode = error.message === "Processing timeout" ? 504 : 500;
+    const errorMessage = error.message === "Processing timeout" 
+      ? "Request timed out. Document processing took too long."
+      : error.message || "Failed to validate document";
+
     context.res = {
       ...context.res,
-      status: 500,
-      body: { 
-        error: error.message,
-        stack: error.stack
-      }
+      status: statusCode,
+      body: { error: errorMessage }
     };
   }
 };
