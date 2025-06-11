@@ -576,31 +576,87 @@ function validateCertificateOfFormation(content, contentLower, pages, keyValuePa
   const missingElements = [];
   const suggestedActions = [];
   let detectedOrganizationName = null;
+
+  // Look for organization name after specific phrases
+  const searchPhrases = [
+    "certificate of formation",
+    "short form standing",
+    "long form standing with officers and directors",
+    "name of domestic corporation:",
+    "name:",
+    "above-named",
+    "entity name"
+  ];
   
-  // Look for entity name in the document
-  // Method 1: Check by "Name:" keyword
-  const nameMatch = content.match(/name:\s*([^\r\n]+)/i) || content.match(/name of domestic corporation:\s*([^\r\n]+)/i) || content.match(/the name of the limited liability company is\s*([^\r\n]+)/i);
-  if (nameMatch && nameMatch[1] && nameMatch[1].trim().length > 0) {
-    detectedOrganizationName = nameMatch[1].trim();
-  }
+  let foundIndex = -1;
+  let foundPhraseLength = 0;
   
-  // Method 2: Check from "The above-named" text
-  if (!detectedOrganizationName) {
-    const aboveNamedMatch = content.match(/above-named\s+([^was]+)was/i);
-    if (aboveNamedMatch && aboveNamedMatch[1] && aboveNamedMatch[1].trim().length > 0) {
-      detectedOrganizationName = aboveNamedMatch[1].trim();
+  // Find which phrase exists in the content
+  for (const phrase of searchPhrases) {
+    const index = contentLower.indexOf(phrase);
+    if (index !== -1) {
+      foundIndex = index;
+      foundPhraseLength = phrase.length;
+      break;
     }
   }
   
-  // Method 3: Try to extract from key-value pairs
-  if (!detectedOrganizationName) {
-    const namePair = keyValuePairs.find(pair => 
-      pair.key && pair.key.content && 
-      pair.key.content.toLowerCase().trim() === 'name:'
-    );
+  if (foundIndex !== -1) {
+    // Get the text after the found phrase
+    const textAfterPhrase = content.substring(foundIndex + foundPhraseLength);
     
-    if (namePair && namePair.value) {
-      detectedOrganizationName = namePair.value.content;
+    // Split into lines and find the organization name
+    const lines = textAfterPhrase.split('\n');
+    for (let i = 0; i < Math.min(5, lines.length); i++) {
+      const line = lines[i].trim();
+      // Skip empty lines or lines with less than 3 characters
+      if (line && line.length > 3 && !line.match(/^\d{1,2}[\/-]\d{1,2}[\/-]\d{2,4}$/)) {
+        // Skip lines that have typical metadata
+        if (!line.toLowerCase().includes("short form standing") && 
+            !line.toLowerCase().includes("long form standing") &&
+            !line.toLowerCase().includes("new jersey department") &&
+            !line.toLowerCase().includes("date filed") &&
+            !line.toLowerCase().includes("state of") &&
+            !line.toLowerCase().includes("department of") &&
+            !line.toLowerCase().includes("division of") &&
+            !line.toLowerCase().includes("treasury")) {
+          detectedOrganizationName = line;
+          // If it's all caps or has business entity indicators, it's very likely the org name
+          if ((line === line.toUpperCase() && line.length > 5) || 
+              /LLC|INC|CORP|CORPORATION|COMPANY|LP|LLP/i.test(line)) {
+            break;  // We're confident this is the org name
+          }
+        }
+      }
+    }
+  }
+  
+  // Fallback: Try traditional methods if the advanced logic didn't find anything
+  if (!detectedOrganizationName) {
+    // Method 1: Check by "Name:" keyword
+    const nameMatch = content.match(/name:\s*([^\r\n]+)/i) || content.match(/name of domestic corporation:\s*([^\r\n]+)/i) || content.match(/the name of the limited liability company is\s*([^\r\n]+)/i);
+    if (nameMatch && nameMatch[1] && nameMatch[1].trim().length > 0) {
+      detectedOrganizationName = nameMatch[1].trim();
+    }
+    
+    // Method 2: Check from "The above-named" text
+    if (!detectedOrganizationName) {
+      const aboveNamedMatch = content.match(/above-named\s+([^was]+)was/i);
+      if (aboveNamedMatch && aboveNamedMatch[1] && aboveNamedMatch[1].trim().length > 0) {
+        detectedOrganizationName = aboveNamedMatch[1].trim();
+      }
+    }
+    
+    // Method 3: Try to extract from key-value pairs
+    if (!detectedOrganizationName) {
+      const namePair = keyValuePairs.find(pair => 
+        pair.key && pair.key.content && 
+        pair.key.content.toLowerCase().trim() === 'name:'
+      );
+      
+      if (namePair && namePair.value) {
+        detectedOrganizationName = namePair.value.content;
+      }
     }
   }
   
@@ -613,7 +669,7 @@ function validateCertificateOfFormation(content, contentLower, pages, keyValuePa
   }
   
   // Check for required elements
-  if (!contentLower.includes("certificate of formation")) {
+  if (!contentLower.includes("certificate of formation") || !contentLower.includes("short form standing") || !contentLower.includes("long form standing")) {
     missingElements.push("Required keyword: 'Certificate of Formation'");
   }
   
