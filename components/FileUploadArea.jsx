@@ -1,4 +1,21 @@
 'use client';
+/**
+ * FileUploadArea.jsx
+ * ------------------
+ * Drag-and-drop + click-to-browse component that collects the document
+ * to be validated.  All heavy lifting (file validation, base64 encoding)
+ * is done in the parent (DocumentValidator) – this component is strictly
+ * concerned with UI and UX behaviour.
+ *
+ * Props
+ * -----
+ * • file:          File|null – currently selected file; controls success UI.
+ * • fileName:      string    – derived display name.
+ * • isDragOver:    boolean   – highlights area when file is dragged over.
+ * • handleFileChange: (e) => void – fires on <input type="file" /> change.
+ * • handleDragEnter / Leave / Over / Drop – standard DnD handlers.
+ * • isDarkMode:    boolean   – theme toggle for Tailwind classes.
+ */
 
 import { Upload, CheckCircle } from 'lucide-react';
 

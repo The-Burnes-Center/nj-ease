@@ -1,4 +1,20 @@
 'use client';
+/**
+ * ValidationButton.jsx
+ * --------------------
+ * Simple presentational component that renders the primary CTA
+ * used to trigger the document-validation workflow.
+ *
+ * Props
+ * -----
+ * • isUploading: boolean  – true while the API request is pending;
+ *   renders a disabled button with a spinner.
+ * • validateDocument: () => void – callback that initiates validation.
+ * • isDarkMode: boolean – drives Tailwind class selection for theming.
+ *
+ * There is no internal state; the component is intentionally kept
+ * stateless to aid reusability and testability.
+ */
 
 import { CheckCircle } from 'lucide-react';
 
