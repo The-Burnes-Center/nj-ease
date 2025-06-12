@@ -13,7 +13,7 @@
 ## 🧠 What It Does
 
 - 📄 **Multi-Document Support** – Validate Tax Clearance Certificates, Certificates of Formation/Incorporation, Operating Agreements, IRS Determination Letters, and more.
-- 🖱️ **Drag-and-Drop Upload** – Drop a file up to 50 MB (PDF, DOCX, DOC, TXT, PNG, JPG, JPEG) or browse from your device.
+- 🖱️ **Drag-and-Drop Upload** – Drop a file up to 23 MB (PDF, DOCX, DOC, TXT, PNG, JPG, JPEG) or browse from your device.
 - 🔍 **AI-Powered Extraction** – Uses Azure AI Document Intelligence (Form Recognizer) to extract text, tables, key–value pairs, and detect handwriting.
 - ✅ **Rule-Based Verification** – Custom logic checks for required fields (organisation name, FEIN, dates < 6 months, official seals, signatures, etc.) and flags anything missing.
 - 🌗 **Dark / Light Theme** – One-click toggle with preference saved to `localStorage`.
