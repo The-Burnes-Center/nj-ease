@@ -25,10 +25,6 @@
 
 ![Architecture Diagram](./architecture.png)
 
-```text
-[Document Upload] → [Azure AI Document Intelligence Analysis] → [Field Extraction] → [Document Validation] → [Frontend Display]
-```
-
 ---
 
 ## 🧰 Tech Stack
