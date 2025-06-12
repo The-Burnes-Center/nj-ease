@@ -43,7 +43,9 @@ export default function FormFields({
             onChange={handleInputChange}
             className={`w-full px-4 py-2 border-2 rounded-xl focus:outline-none focus:ring-4 text-sm md:text-base backdrop-blur-sm transition-all duration-200 ${
               fieldErrors.organizationName 
-                ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500' 
+                ? (isDarkMode
+                    ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500 bg-gray-700/50 text-gray-200 placeholder-gray-400'
+                    : 'border-red-300 focus:ring-red-500/20 focus:border-red-500 bg-white/50 text-gray-700 placeholder-gray-400')
                 : isDarkMode
                   ? 'border-gray-600 focus:ring-blue-500/20 focus:border-blue-400 hover:border-gray-500 bg-gray-700/50 text-gray-200 placeholder-gray-400'
                   : 'border-gray-200 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 bg-white/50 text-gray-700 placeholder-gray-400'
@@ -67,7 +69,9 @@ export default function FormFields({
             onChange={handleInputChange}
             className={`w-full px-4 py-2 border-2 rounded-xl focus:outline-none focus:ring-4 text-sm md:text-base backdrop-blur-sm transition-all duration-200 ${
               fieldErrors.fein 
-                ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500' 
+                ? (isDarkMode
+                    ? 'border-red-300 focus:ring-red-500/20 focus:border-red-500 bg-gray-700/50 text-gray-200 placeholder-gray-400'
+                    : 'border-red-300 focus:ring-red-500/20 focus:border-red-500 bg-white/50 text-gray-700 placeholder-gray-400')
                 : isDarkMode
                   ? 'border-gray-600 focus:ring-blue-500/20 focus:border-blue-400 hover:border-gray-500 bg-gray-700/50 text-gray-200 placeholder-gray-400'
                   : 'border-gray-200 focus:ring-blue-500/20 focus:border-blue-500 hover:border-gray-300 bg-white/50 text-gray-700 placeholder-gray-400'
