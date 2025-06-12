@@ -57,6 +57,12 @@ import ValidationButton from './ValidationButton';
 import ErrorMessage from './ErrorMessage';
 import ValidationResults from './ValidationResults';
 
+// Add a configurable base URL for the API so that local development can point
+// to a separately-hosted Azure Functions instance (e.g. http://localhost:7071).
+// If the env var is undefined we fall back to the relative path which works in
+// production (Static Web Apps serves frontend & API under the same host).
+const API_BASE_URL = (process.env.NEXT_PUBLIC_API_BASE_URL || '').replace(/\/$/, '');
+
 export default function DocumentValidator() {
   const [file, setFile] = useState(null);
   const [fileName, setFileName] = useState('');
@@ -303,7 +309,7 @@ export default function DocumentValidator() {
       };
 
       // Call your API route with JSON payload
-      const response = await fetch('/api/validate-document', {
+      const response = await fetch(`${API_BASE_URL}/api/validate-document`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

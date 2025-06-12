@@ -15,13 +15,15 @@
 - 📄 **Multi-Document Support** – Validate Tax Clearance Certificates, Certificates of Formation/Incorporation, Operating Agreements, IRS Determination Letters, and more.
 - 🖱️ **Drag-and-Drop Upload** – Drop a file up to 23 MB (PDF, DOCX, DOC, TXT, PNG, JPG, JPEG) or browse from your device.
 - 🔍 **AI-Powered Extraction** – Uses Azure AI Document Intelligence (Form Recognizer) to extract text, tables, key–value pairs, and detect handwriting.
-- ✅ **Rule-Based Verification** – Custom logic checks for required fields (organisation name, FEIN, dates < 6 months, official seals, signatures, etc.) and flags anything missing.
+- ✅ **Rule-Based Verification** – Custom logic checks for each business document (organisation name, FEIN, dates, official seals, signatures, etc.) and flags anything missing.
 - 🌗 **Dark / Light Theme** – One-click toggle with preference saved to `localStorage`.
 - ⚡ **Instant Feedback** – Results returned as JSON and rendered in a human-friendly checklist with suggested next steps if the document fails.
 
 ---
 
 ## 🧱 Architecture
+
+![Architecture Diagram](./architecture.png)
 
 ```text
 [Document Upload] → [Azure AI Document Intelligence Analysis] → [Field Extraction] → [Document Validation] → [Frontend Display]
@@ -71,9 +73,9 @@ Azure AI Document Intelligence (formerly **Form Recognizer**) is the service tha
 1. Sign in to the [Azure portal](https://portal.azure.com/).
 2. Select **Create a resource** → **AI Services** → **Document Intelligence**.
 3. Fill in the required details:
-   • **Subscription & Resource Group**
-   • **Region**: Choose a supported region such as *East US*  
-   • **Pricing tier**: **S0** (Standard)
+   - **Subscription & Resource Group**
+   - **Region**: Choose a supported region such as *East US*  
+   - **Pricing tier**: **S0** (Standard)
 4. Click **Review + Create** and wait for deployment to complete.
 5. After deployment, open the resource and navigate to **Keys and Endpoint**.
    Copy the **Endpoint URL** and **Key 1** – you will use them in the next step.
@@ -104,9 +106,9 @@ Save the **endpoint** and **key** values; you will paste them into `api/local.se
 
 The validator needs credentials for Azure Document Intelligence.
 
-Create an `api/local.settings.json` file for the API.
+Create a `local.settings.json` file for the API in the `api` directory.
 
-`api/local.settings.json` example:
+`local.settings.json` example:
 
 ```json
 {
@@ -116,9 +118,23 @@ Create an `api/local.settings.json` file for the API.
     "AzureWebJobsStorage": "UseDevelopmentStorage=true",
     "DI_ENDPOINT": "https://<your-resource>.cognitiveservices.azure.com/",
     "DI_KEY": "<your-ai-document-intelligence-key>"
+  },
+  "Host": {
+    "CORS": "http://localhost:3000",
+    "CORSCredentials": true
   }
 }
 ```
+
+> **Note:** The `Host` block enables CORS for local development, allowing the Next.js dev server (`http://localhost:3000`) to call the Functions host (`http://localhost:7071`). You can alternatively use the `--cors` flag: `func start --cors http://localhost:3000 --cors-cred true`. After changing CORS settings, restart the Functions host.
+
+Create a `.env.local` file in the project root:
+
+```bash
+NEXT_PUBLIC_API_BASE_URL=http://localhost:7071
+```
+
+> **Note:** This tells the frontend where to find the local Functions host. Not needed in production where both run on the same domain.
 
 ### 4. Run Locally
 
@@ -146,7 +162,7 @@ You can host both the Next.js front-end **and** the Azure Functions API under a 
    - **App location**: `/`  
    - **API location**: `api`  
    - **Output location**: `out` (leave blank if using Next.js preset)
-6. Review + Create – Azure will generate a GitHub Actions workflow (`azure-static-web-apps.yml`) that builds and deploys on every push.
+6. Review + Create – Azure will generate a GitHub Actions workflow that builds and deploys on every push.
 
 #### CLI Alternative
 
@@ -177,7 +193,7 @@ Your production site will be available at `https://<generated-name>.azurestatica
 
 #### GitHub Repository Secrets (CI/CD)
 
-If you rely on the **`azure-static-web-apps.yml`** workflow for CI/CD, make sure
+If you rely on the provided **`azure-static-web-apps.yml`** workflow for CI/CD, make sure
 your GitHub repository has the following *Repository Secrets* configured
 (`Settings → Secrets → Actions`):
 
