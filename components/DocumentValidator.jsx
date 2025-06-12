@@ -166,9 +166,9 @@ export default function DocumentValidator() {
         return;
       }
       
-      // Check file size (50MB limit)
-      if (selectedFile.size > 50 * 1024 * 1024) {
-        setError('File size must be less than 50MB');
+      // Check file size (23MB limit)
+      if (selectedFile.size > 23 * 1024 * 1024) {
+        setError('File size must be less than 23 MB');
         return;
       }
       
